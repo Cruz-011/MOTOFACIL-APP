@@ -13,7 +13,7 @@ export default function Login() {
   const router = useRouter();
 
   const fazerLogin = async () => {
-    if (usuario === 'admin' && senha === '1234') {
+    if (usuario === '' && senha === '') {
       await AsyncStorage.setItem('@usuario_logado', JSON.stringify({ usuario }));
       router.replace('/selecao-patio');
     } else {
