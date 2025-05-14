@@ -1,247 +1,193 @@
-// app/mapa.js - Tela de Mapa moderna com edição das motos
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TextInput, SafeAreaView, ScrollView, Modal, TouchableOpacity,
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import colors from '../../src/theme/colors';
-import { Ionicons } from '@expo/vector-icons';
 
-export default function Mapa() {
-  const [patio, setPatio] = useState(null);
-  const [motos, setMotos] = useState([]);
-  const [motoSelecionada, setMotoSelecionada] = useState(null);
+const larguraPatio = 300;
+const alturaPatio = 300;
+
+export default function MapaPatio({ motoSelecionada }) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [posicaoUsuario, setPosicaoUsuario] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+
+  // Simula coordenadas da moto (valores de 0 a 1)
+  const x = motoSelecionada?.x ?? 0.4;
+  const y = motoSelecionada?.y ?? 0.7;
+
+  const left = x * larguraPatio;
+  const top = y * alturaPatio;
+
+  const leftUser = posicaoUsuario?.x ? posicaoUsuario.x * larguraPatio : 0.1 * larguraPatio;
+  const topUser = posicaoUsuario?.y ? posicaoUsuario.y * alturaPatio : 0.9 * alturaPatio;
 
   useEffect(() => {
-    AsyncStorage.getItem('@patio_selecionado').then((dado) => {
-      if (dado) {
-        const parsed = JSON.parse(dado);
-        setPatio(parsed);
-        gerarMotosExemplo(parsed);
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setCarregando(false);
+        return;
       }
-    });
+
+      // Aqui você pode adaptar a lógica para gerar coordenadas reais
+      setPosicaoUsuario({ x: 0.1, y: 0.9 });
+      setCarregando(false);
+    })();
   }, []);
 
-  const gerarMotosExemplo = (p) => {
-    const exemplo = [
-      { id: 1, cor: 'verde', placa: 'ABC1234', modelo: 'Modelo A', zonaId: p.zonas[0]?.id },
-      { id: 2, cor: 'azul', placa: 'DEF5678', modelo: 'Modelo B', zonaId: p.zonas[1]?.id },
-      { id: 3, cor: 'vermelho', placa: 'GHI9012', modelo: 'Modelo C', zonaId: p.zonas[2]?.id },
-    ];
-    setMotos(exemplo);
-  };
+  const renderMapa = () => (
+    <View style={styles.mapa}>
+      {/* Moto */}
+      <View style={[styles.ponto, styles.moto, { left, top }]}>
+        <Text style={styles.icone}>🏍️</Text>
+      </View>
 
-  const abrirModal = (moto) => setMotoSelecionada({ ...moto });
-
-  const salvarEdicao = () => {
-    setMotos((prev) =>
-      prev.map((m) => (m.id === motoSelecionada.id ? motoSelecionada : m))
-    );
-    setMotoSelecionada(null);
-  };
-
-  const excluirMoto = () => {
-    setMotos((prev) => prev.filter((m) => m.id !== motoSelecionada.id));
-    setMotoSelecionada(null);
-  };
-
-  const mudarLocalAleatorio = () => {
-    const zona = patio.zonas.find((z) => z.id === motoSelecionada.zonaId);
-    if (zona) {
-      const novaX = 20 + Math.random() * (zona.width - 40);
-      const novaY = 40 + Math.random() * (zona.height - 60);
-      setMotoSelecionada((prev) => ({ ...prev, deslocX: novaX, deslocY: novaY }));
-    }
-  };
-
-  const contarPorCor = (cor) => motos.filter((m) => m.cor === cor).length;
-
-  if (!patio) return <Text style={{ color: colors.text, padding: 20 }}>Carregando pátio...</Text>;
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.titulo}>{patio.nome}</Text>
-
-        <View style={styles.resumoContainer}>
-          <ResumoCard icon="speedometer" corIcon={colors.primary} titulo="Total" valor={motos.length} />
-          <ResumoCard icon="ellipse" corIcon="green" titulo="Verdes" valor={contarPorCor('verde')} />
-          <ResumoCard icon="ellipse" corIcon="blue" titulo="Azuis" valor={contarPorCor('azul')} />
-          <ResumoCard icon="ellipse" corIcon="red" titulo="Vermelhas" valor={contarPorCor('vermelho')} />
-        </View>
-
-        <View style={styles.center}>
-          <View style={[styles.patio, {
-            width: patio.estrutura.width,
-            height: patio.estrutura.height,
-          }]}>
-            {patio.zonas.map((zona) => (
-              <View
-                key={zona.id}
-                style={[styles.zona, {
-                  top: zona.y - patio.estrutura.y,
-                  left: zona.x - patio.estrutura.x,
-                  width: zona.width,
-                  height: zona.height,
-                }]}
-              >
-                <Text style={styles.zonaTexto}>{zona.nome}</Text>
-                {motos.filter((m) => m.zonaId === zona.id).map((moto) => (
-                  <TouchableOpacity
-                    key={moto.id}
-                    onPress={() => abrirModal(moto)}
-                    style={[styles.moto, {
-                      backgroundColor: moto.cor,
-                      top: moto.deslocY || 40,
-                      left: moto.deslocX || 20,
-                    }]}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Modal de edição */}
-        <Modal visible={!!motoSelecionada} transparent animationType="slide">
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Editar Moto</Text>
-
-              <Text style={styles.label}>Placa:</Text>
-              <TextInput
-                style={styles.input}
-                value={motoSelecionada?.placa}
-                onChangeText={(t) => setMotoSelecionada((prev) => ({ ...prev, placa: t }))}
-              />
-
-              <Text style={styles.label}>Modelo:</Text>
-              <TextInput
-                style={styles.input}
-                value={motoSelecionada?.modelo}
-                onChangeText={(t) => setMotoSelecionada((prev) => ({ ...prev, modelo: t }))}
-              />
-
-              <Text style={styles.label}>Classificação:</Text>
-              <Text style={[styles.classificacao, { color: motoSelecionada?.cor }]}>
-                {motoSelecionada?.cor === 'verde' ? 'Reparo Leve' :
-                 motoSelecionada?.cor === 'azul' ? 'Reparo Médio' : 'Reparo Complexo'}
-              </Text>
-
-              <TouchableOpacity style={styles.btn} onPress={mudarLocalAleatorio}>
-                <Text style={styles.btnTexto}>Mudar Localização</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.btn} onPress={salvarEdicao}>
-                <Text style={styles.btnTexto}>Salvar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.btn, { backgroundColor: 'red' }]} onPress={excluirMoto}>
-                <Text style={styles.btnTexto}>Excluir Moto</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.secondary }]} onPress={() => setMotoSelecionada(null)}>
-                <Text style={styles.btnTexto}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-      </ScrollView>
-    </SafeAreaView>
+      {/* Usuário */}
+      <View style={[styles.ponto, styles.usuario, { left: leftUser, top: topUser }]}>
+        <Text style={styles.icone}>🧍</Text>
+      </View>
+    </View>
   );
-}
 
-function ResumoCard({ icon, corIcon, titulo, valor }) {
   return (
-    <View style={styles.cardResumo}>
-      <Ionicons name={icon} size={24} color={corIcon} />
-      <Text style={styles.cardValor}>{valor}</Text>
-      <Text style={styles.cardTitulo}>{titulo}</Text>
+    <View>
+      <Text style={styles.titulo}>📍 Mapa do Pátio</Text>
+
+      <View style={styles.legenda}>
+        <Text style={styles.legendaItem}>🔴 Moto</Text>
+        <Text style={styles.legendaItem}>🔵 Você</Text>
+      </View>
+
+      {carregando ? (
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+      ) : (
+        <>
+          {renderMapa()}
+          <TouchableOpacity style={styles.expandirBtn} onPress={() => setModalVisible(true)}>
+            <Text style={styles.expandirText}>🧭 Ampliar Mapa</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {/* MODAL */}
+      <Modal visible={modalVisible} animationType="slide" transparent={false}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitulo}>📍 Mapa - Visualização Completa</Text>
+
+          {/* Dados da moto */}
+          {motoSelecionada ? (
+            <View style={styles.motoInfo}>
+              <Text style={styles.infoText}>Placa: {motoSelecionada.placa}</Text>
+              <Text style={styles.infoText}>Modelo: {motoSelecionada.modelo ?? 'Não informado'}</Text>
+              <Text style={styles.infoText}>Categoria: {motoSelecionada.categoria ?? 'Não informado'}</Text>
+            </View>
+          ) : (
+            <Text style={styles.infoText}>Nenhuma moto selecionada</Text>
+          )}
+
+          {renderMapa()}
+
+          <TouchableOpacity style={styles.fecharBtn} onPress={() => setModalVisible(false)}>
+            <Text style={styles.expandirText}>❌ Fechar</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: 20 },
-  titulo: { fontSize: 22, fontWeight: 'bold', color: colors.primary, textAlign: 'center', marginBottom: 20 },
-  resumoContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
-  cardResumo: {
-    backgroundColor: colors.card,
-    width: '48%',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  cardValor: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginVertical: 4 },
-  cardTitulo: { fontSize: 14, color: colors.secondary },
-  center: { alignItems: 'center', justifyContent: 'center' },
-  patio: {
-    backgroundColor: '#f5f5f5',
-    borderColor: colors.primary,
-    borderWidth: 2,
-    borderRadius: 10,
-    position: 'relative',
-  },
-  zona: {
-    position: 'absolute',
-    backgroundColor: '#ddd',
-    borderColor: colors.primary,
-    borderWidth: 1,
-    padding: 4,
-    borderRadius: 6,
-  },
-  zonaTexto: { color: colors.text, fontSize: 12, textAlign: 'center', marginBottom: 4 },
-  moto: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    position: 'absolute',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#000000aa',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 10,
-    width: '85%',
-  },
-  modalTitle: {
+  titulo: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: colors.primary,
     marginBottom: 10,
     textAlign: 'center',
   },
-  input: {
-    backgroundColor: colors.background,
-    color: colors.text,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+  legenda: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.primary,
   },
-  label: { color: colors.primary, fontWeight: 'bold', marginBottom: 4 },
-  classificacao: { fontWeight: 'bold', fontSize: 16, marginBottom: 10 },
-  btn: {
+  legendaItem: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  mapa: {
+    width: larguraPatio,
+    height: alturaPatio,
+    backgroundColor: '#e0e0e0',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignSelf: 'center',
+    position: 'relative',
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  ponto: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moto: {
+    backgroundColor: 'red',
+  },
+  usuario: {
+    backgroundColor: 'blue',
+  },
+  icone: {
+    color: 'white',
+    fontSize: 16,
+  },
+  expandirBtn: {
     backgroundColor: colors.primary,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 8,
+    marginTop: 5,
   },
-  btnTexto: { color: colors.text, fontWeight: 'bold' },
+  expandirText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  modalTitulo: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 20,
+  },
+  motoInfo: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  infoText: {
+    color: colors.text,
+    fontSize: 16,
+    marginVertical: 2,
+  },
+  fecharBtn: {
+    backgroundColor: '#444',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 30,
+  },
 });

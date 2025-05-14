@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, LayoutAnimation, Platform, UIManager } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
 import colors from '../../src/theme/colors';
 import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
 import MapaPatio from '../../components/MapaPatio';
@@ -19,25 +28,13 @@ export default function Motos() {
   };
 
   const handleNovaMoto = (moto) => {
-    console.log('✅ Moto registrada:', moto);
+    console.log('✅ Moto cadastrada:', moto);
     setMostrarCadastro(false);
   };
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.titulo}>Gerenciamento de Motos</Text>
-
-      <TouchableOpacity style={styles.btnToggle} onPress={toggleCadastro} activeOpacity={0.8}>
-        <Text style={styles.btnTexto}>
-          {mostrarCadastro ? '⬆️ Fechar Cadastro' : '➕ Cadastrar Nova Moto'}
-        </Text>
-      </TouchableOpacity>
-
-      {mostrarCadastro && (
-        <View style={styles.card}>
-          <CadastroMotoAvancado onRegistrarLocalizacao={handleNovaMoto} />
-        </View>
-      )}
+      <Text style={styles.header}>Gestão de Motos no Pátio</Text>
 
       <View style={styles.card}>
         <BuscaMoto onSelecionarMoto={(m) => setMotoSelecionada(m)} />
@@ -46,6 +43,18 @@ export default function Motos() {
       <View style={styles.card}>
         <MapaPatio motoSelecionada={motoSelecionada} />
       </View>
+
+      <TouchableOpacity style={styles.actionBtn} onPress={toggleCadastro} activeOpacity={0.8}>
+        <Text style={styles.actionText}>
+          {mostrarCadastro ? '✖️ Cancelar Cadastro' : '➕ Cadastrar Nova Moto'}
+        </Text>
+      </TouchableOpacity>
+
+      {mostrarCadastro && (
+        <View style={styles.formCard}>
+          <CadastroMotoAvancado onRegistrarLocalizacao={handleNovaMoto} />
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -55,37 +64,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   container: {
+    paddingTop: 40,
     padding: 20,
-    paddingTop: 60,
+    paddingBottom: 60,
     alignItems: 'center',
   },
-  titulo: {
-    fontSize: 26,
+  header: {
+    fontSize: 24,
     color: colors.primary,
     fontWeight: 'bold',
-    marginBottom: 30,
+    marginBottom: 25,
     textAlign: 'center',
-  },
-  btnToggle: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 25,
-    borderRadius: 12,
-    marginBottom: 20,
-    elevation: 4,
-  },
-  btnTexto: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   card: {
     width: '100%',
     maxWidth: 600,
     backgroundColor: colors.card,
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     marginBottom: 25,
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  actionBtn: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: 600,
+    backgroundColor: '#1f1f1f',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 30,
+    borderColor: colors.primary,
+    borderWidth: 1,
   },
 });
