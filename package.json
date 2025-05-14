@@ -35,7 +35,8 @@
     "react-native-web": "~0.20.0",
     "xlsx": "^0.18.5",
     "expo-sharing": "~13.1.5",
-    "expo-print": "~14.1.4"
+    "expo-print": "~14.1.4",
+    "expo-location": "~18.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

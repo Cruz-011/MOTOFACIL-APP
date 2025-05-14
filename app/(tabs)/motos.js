@@ -3,14 +3,15 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Text, LayoutAnimation, 
 import colors from '../../src/theme/colors';
 import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
 import MapaPatio from '../../components/MapaPatio';
+import BuscaMoto from '../../components/BuscaMoto';
 
-// Ativa animação no Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 export default function Motos() {
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
+  const [motoSelecionada, setMotoSelecionada] = useState(null);
 
   const toggleCadastro = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -26,9 +27,7 @@ export default function Motos() {
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.titulo}>Gerenciamento de Motos</Text>
 
-      
-       <TouchableOpacity style={styles.btnToggle} onPress={toggleCadastro} activeOpacity={0.8}>
-
+      <TouchableOpacity style={styles.btnToggle} onPress={toggleCadastro} activeOpacity={0.8}>
         <Text style={styles.btnTexto}>
           {mostrarCadastro ? '⬆️ Fechar Cadastro' : '➕ Cadastrar Nova Moto'}
         </Text>
@@ -41,7 +40,11 @@ export default function Motos() {
       )}
 
       <View style={styles.card}>
-        <MapaPatio />
+        <BuscaMoto onSelecionarMoto={(m) => setMotoSelecionada(m)} />
+      </View>
+
+      <View style={styles.card}>
+        <MapaPatio motoSelecionada={motoSelecionada} />
       </View>
     </ScrollView>
   );
