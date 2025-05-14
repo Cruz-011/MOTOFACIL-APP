@@ -1,10 +1,14 @@
-// components/BottomTabsLayout.js
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../src/theme/colors';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BottomTabsLayout() {
+  const insets = useSafeAreaInsets();
+
+  const extraSpace = 10; // 👈 Ajuste fino pra subir mais
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
@@ -14,12 +18,12 @@ export default function BottomTabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.background,
           borderTopColor: colors.primary,
-          height: Platform.OS === 'ios' ? 90 : 60,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 8,
+          height: 60 + insets.bottom + extraSpace,
+          paddingBottom: insets.bottom + extraSpace,
         },
         tabBarIcon: ({ color, size }) => {
           const icons = {
-            '../../selecao-patio': 'home',
+            'selecao-patio': 'home',
             'mapa': 'map',
             'relatorios': 'analytics',
             'motos': 'bicycle',
