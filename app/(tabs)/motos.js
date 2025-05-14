@@ -1,29 +1,48 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text, LayoutAnimation, Platform, UIManager } from 'react-native';
 import colors from '../../src/theme/colors';
-import ResumoMotos from '../../components/ResumoMotos';
 import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
+import MapaPatio from '../../components/MapaPatio';
 
-const dadosPatio = {
-  total: 24,
-  classificacao: { verde: 7, azul: 10, vermelha: 7 },
-  categorias: { aluguel: 15, aquisicao: 9 },
-};
+// Ativa animação no Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function Motos() {
+  const [mostrarCadastro, setMostrarCadastro] = useState(false);
+
+  const toggleCadastro = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setMostrarCadastro(!mostrarCadastro);
+  };
+
   const handleNovaMoto = (moto) => {
-    console.log('🆕 Nova moto cadastrada:', moto);
+    console.log('✅ Moto registrada:', moto);
+    setMostrarCadastro(false);
   };
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <ResumoMotos
-        total={dadosPatio.total}
-        classificacao={dadosPatio.classificacao}
-        categorias={dadosPatio.categorias}
-      />
+      <Text style={styles.titulo}>Gerenciamento de Motos</Text>
 
-      <CadastroMotoAvancado onRegistrarLocalizacao={handleNovaMoto} />
+      
+       <TouchableOpacity style={styles.btnToggle} onPress={toggleCadastro} activeOpacity={0.8}>
+
+        <Text style={styles.btnTexto}>
+          {mostrarCadastro ? '⬆️ Fechar Cadastro' : '➕ Cadastrar Nova Moto'}
+        </Text>
+      </TouchableOpacity>
+
+      {mostrarCadastro && (
+        <View style={styles.card}>
+          <CadastroMotoAvancado onRegistrarLocalizacao={handleNovaMoto} />
+        </View>
+      )}
+
+      <View style={styles.card}>
+        <MapaPatio />
+      </View>
     </ScrollView>
   );
 }
@@ -35,5 +54,35 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingTop: 60,
+    alignItems: 'center',
+  },
+  titulo: {
+    fontSize: 26,
+    color: colors.primary,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  btnToggle: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 25,
+    borderRadius: 12,
+    marginBottom: 20,
+    elevation: 4,
+  },
+  btnTexto: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 600,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 25,
+    elevation: 4,
   },
 });

@@ -19,12 +19,11 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao }) {
   const registrarPosicao = () => {
     if (!validarCampos()) return;
 
-    // Aqui entra o envio para o ESP32 central
     console.log('📡 Enviando dados ao ESP32:', { placa, chassi, cor, categoria });
     Alert.alert('Localização registrada', 'Moto posicionada com sucesso no pátio!');
 
     onRegistrarLocalizacao?.({ placa, chassi, cor, categoria });
-    
+
     setPlaca('');
     setChassi('');
     setCor('');
@@ -32,12 +31,12 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Cadastro da Moto</Text>
+    <View>
+      <Text style={styles.titulo}>Cadastro Avançado</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Placa"
+        placeholder="Placa da moto"
         placeholderTextColor={colors.secondary}
         value={placa}
         onChangeText={setPlaca}
@@ -64,7 +63,7 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao }) {
         onChangeText={setCategoria}
       />
 
-      <TouchableOpacity style={styles.btn} onPress={registrarPosicao}>
+      <TouchableOpacity style={styles.btn} onPress={registrarPosicao} activeOpacity={0.8}>
         <Text style={styles.btnText}>📍 Registrar Localização</Text>
       </TouchableOpacity>
     </View>
@@ -72,17 +71,11 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
   titulo: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     color: colors.primary,
-    marginBottom: 10,
+    marginBottom: 16,
     textAlign: 'center',
   },
   input: {
