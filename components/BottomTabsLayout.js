@@ -7,8 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function BottomTabsLayout() {
   const insets = useSafeAreaInsets();
 
-  const extraSpace = 10; // 👈 Ajuste fino pra subir mais
-
+  const extraSpace = 20; 
   return (
     <Tabs
       screenOptions={({ route }) => ({
