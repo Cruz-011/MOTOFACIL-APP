@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../../src/theme/colors';
 import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
 import MapaPatio from '../../components/MapaPatio';
@@ -25,6 +26,21 @@ export default function Motos() {
   const [motoSelecionada, setMotoSelecionada] = useState(null);
   const [motosRegistradas, setMotosRegistradas] = useState([]);
 
+  useEffect(() => {
+    carregarMotos();
+  }, []);
+
+  const carregarMotos = async () => {
+    const salvas = await AsyncStorage.getItem('motos');
+    if (salvas) {
+      setMotosRegistradas(JSON.parse(salvas));
+    }
+  };
+
+  const salvarMotos = async (motos) => {
+    await AsyncStorage.setItem('motos', JSON.stringify(motos));
+  };
+
   const toggleCadastro = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setMostrarCadastro(!mostrarCadastro);
@@ -34,10 +50,12 @@ export default function Motos() {
     const novaMoto = {
       ...moto,
       id: Date.now(),
-      status: 'pingar', // precisa ser pingada no pátio
+      status: 'pingar',
       localizacao: null,
     };
-    setMotosRegistradas([...motosRegistradas, novaMoto]);
+    const listaAtualizada = [...motosRegistradas, novaMoto];
+    setMotosRegistradas(listaAtualizada);
+    salvarMotos(listaAtualizada);
     setMotoSelecionada(novaMoto);
     setMostrarCadastro(false);
   };
@@ -59,7 +77,7 @@ export default function Motos() {
   };
 
   const pingarLocalizacao = () => {
-    const local = { x: Math.random(), y: Math.random() }; // simulação — substitua pelo valor real via mapa
+    const local = { x: Math.random(), y: Math.random() };
     const atualizada = {
       ...motoSelecionada,
       status: 'patio',
@@ -73,6 +91,7 @@ export default function Motos() {
   const atualizarMoto = (atualizada) => {
     const listaNova = motosRegistradas.map((m) => (m.id === atualizada.id ? atualizada : m));
     setMotosRegistradas(listaNova);
+    salvarMotos(listaNova);
   };
 
   const renderMapaOuStatus = () => {
@@ -208,6 +227,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   buttonGroup: {
-    marginTop: 15,
+    gap: 12,
   },
 });

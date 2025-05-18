@@ -157,10 +157,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   expandirBtn: {
+    
     backgroundColor: colors.primary,
     padding: 12,
     borderRadius: 10,
-    marginTop: 10,
+    marginTop: 0,
+    marginBottom: 20,
   },
   expandirText: {
     color: '#fff',

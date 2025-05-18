@@ -2,19 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import colors from '../src/theme/colors';
 
-// Dados simulados
-const motosSimuladas = [
-  { placa: 'ABC1234', chassi: 'X123', x: 0.4, y: 0.7 },
-  { placa: 'XYZ5678', chassi: 'Y567', x: 0.2, y: 0.3 },
-  { placa: 'QWE9876', chassi: 'Z987', x: 0.6, y: 0.5 },
-];
-
-export default function BuscaMoto({ onSelecionarMoto }) {
+export default function BuscaMoto({ motos = [], onSelecionarMoto }) {
   const [busca, setBusca] = useState('');
 
-  const resultados = motosSimuladas.filter((m) =>
-    m.placa.toLowerCase().includes(busca.toLowerCase()) ||
-    m.chassi.toLowerCase().includes(busca.toLowerCase())
+  const resultados = motos.filter((m) =>
+    m.placa?.toLowerCase().includes(busca.toLowerCase()) ||
+    m.chassi?.toLowerCase().includes(busca.toLowerCase())
   );
 
   return (
@@ -31,7 +24,7 @@ export default function BuscaMoto({ onSelecionarMoto }) {
 
       {resultados.map((item) => (
         <TouchableOpacity
-          key={item.placa}
+          key={item.id?.toString() || item.placa}
           style={styles.item}
           onPress={() => onSelecionarMoto(item)}
         >

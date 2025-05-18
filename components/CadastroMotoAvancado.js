@@ -18,8 +18,8 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar 
   const [categoria, setCategoria] = useState('');
 
   const validar = () => {
-    if (!placa || !modelo || !cor || !categoria) {
-      Alert.alert('Campos obrigatórios', 'Placa, Modelo, Cor e Categoria são obrigatórios.');
+    if (!placa || !modelo || !categoria) {
+      Alert.alert('Campos obrigatórios', 'Placa, Modelo e Categoria são obrigatórios.');
       return false;
     }
     return true;
@@ -75,18 +75,6 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar 
         ))}
       </View>
 
-      <Text style={styles.label}>Cor</Text>
-      <View style={styles.cores}>
-        {cores.map((c) => (
-          <TouchableOpacity
-            key={c}
-            style={[styles.corBtn, cor === c && styles.corSelecionada]}
-            onPress={() => setCor(c)}
-          >
-            <Text style={styles.corText}>{c.toUpperCase()}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
 <Text style={styles.label}>Categoria</Text>
 <View style={styles.categorias}>
