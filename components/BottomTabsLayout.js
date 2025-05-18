@@ -36,7 +36,9 @@ export default function BottomTabsLayout() {
       <Tabs.Screen name="mapa" options={{ title: 'Mapa' }} />
       <Tabs.Screen name="relatorios" options={{ title: 'Relatórios' }} />
       <Tabs.Screen name="motos" options={{ title: 'Motos' }} />
-      <Tabs.Screen name="configuracoes" options={{ title: 'Configurações' }} />
+      <Tabs.Screen name="configuracoes" options={{ title: 'Configurações' }} />      
+      <Tabs.Screen name="conectar-patio" options={{ title: 'conectar-patio' }} />
+
     </Tabs>
   );
 }

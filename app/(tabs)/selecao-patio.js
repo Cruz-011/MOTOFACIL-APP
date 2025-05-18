@@ -54,10 +54,6 @@ export default function SelecaoPatio() {
         <TouchableOpacity onPress={() => deletar(item.id)}>
           <Ionicons name="trash-outline" size={22} color="red" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push({ pathname: '/editar-patio', params: { id: item.id } })}>
-          <Ionicons name="create-outline" size={22} color={colors.primary} />
-        </TouchableOpacity>
-        
       </View>
     </View>
   );
@@ -76,16 +72,16 @@ export default function SelecaoPatio() {
 
       <TouchableOpacity
         style={styles.botao}
-        onPress={() => router.push('/patio-config')}
+        onPress={() => router.push('/conectar-patio')}
       >
-        <Text style={styles.botaoTexto}>+ Cadastrar Novo Pátio</Text>
+        <Text style={styles.botaoTexto}>+ Conectar Novo Pátio</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 20,paddingTop: 70 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 20, paddingTop: 70 },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
