@@ -1,0 +1,72 @@
+# Moto Fácil - App para Gestão de Pátio de Motos
+
+## Integrantes
+
+
+Cauan da Cruz Ferreira-558238
+Renan Dorneles Barboza Boucault-557820
+Igor Dias Barrocal-555217
+
+---
+
+## Descrição do Projeto
+
+O **Moto Fácil** é um aplicativo desenvolvido com React Native e Expo Router que tem como objetivo facilitar a gestão de pátios de motos, permitindo o cadastro de pátios, registro e localização de motos dentro do pátio. Este projeto corresponde à 1ª Sprint do curso e apresenta uma navegação funcional entre telas, formulários controlados por estado, armazenamento local e fluxo coerente de uso.
+
+---
+
+## Funcionalidades Implementadas
+
+- Navegação entre pelo menos 5 telas usando Expo Router:
+  - Tela de Login
+  - Tela de Cadastro de Pátio
+  - Tela de Lista de Pátios
+  - Tela de Mapa do Pátio
+  - Tela de Cadastro de Motos (mockada)
+
+- Formulário controlado com `useState` em telas como Login e Cadastro de Pátio, que armazenam dados digitados e exibem dinamicamente.
+
+- Uso de `AsyncStorage` para salvar dados localmente, garantindo que as informações persistam após o fechamento e reabertura do app (exemplo: dados do pátio cadastrado).
+
+- Layout funcional e coerente com o fluxo do usuário, mesmo com design simples.
+
+---
+
+## Como Rodar o Projeto Localmente
+
+### Pré-requisitos
+
+- Node.js instalado (https://nodejs.org)  
+- Expo CLI instalado globalmente:  
+  ```bash
+  npm install -g expo-cli
+
+Git para clonar o repositório
+
+### passo para rodar
+
+Clone o repositório:
+
+git clone https://github.com/Cruz-011/MotoFacilApp53.git
+cd MotoFacilApp53
+
+### Instale as dependências:
+
+npm install
+
+### Inicie o servidor Expo:
+
+npx expo start
+
+Use um emulador Android/iOS ou o aplicativo Expo Go no seu celular para rodar o app.
+
+### Estrutura do Projeto
+/app - Pastas e arquivos das telas e navegação
+
+/components - Componentes reutilizáveis
+
+/assets - Imagens e logos
+
+package.json - Dependências do projeto
+
+README.md - Este arquivo
