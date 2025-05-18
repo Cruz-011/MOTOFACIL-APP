@@ -51,6 +51,10 @@ export default function ConectarPatio() {
     router.replace('/mapa');
   };
 
+  const cancelarCadastro = () => {
+    router.replace('/selecao-patio');
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Conectar ao ESP32</Text>
@@ -89,6 +93,10 @@ export default function ConectarPatio() {
 
       <TouchableOpacity style={styles.botao} onPress={cadastrarPatio}>
         <Text style={styles.botaoTexto}>Conectar e Cadastrar</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.botaoCancelar} onPress={cancelarCadastro}>
+        <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
       </TouchableOpacity>
     </View>
   );
@@ -154,5 +162,17 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  botaoCancelar: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#555', // ou qualquer tom cinza
+  },
+  botaoCancelarTexto: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 });
