@@ -8,6 +8,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Alert,
 } from 'react-native';
 
 import colors from '../../src/theme/colors';
@@ -22,6 +23,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function Motos() {
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
   const [motoSelecionada, setMotoSelecionada] = useState(null);
+  const [motosRegistradas, setMotosRegistradas] = useState([]);
 
   const toggleCadastro = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -29,8 +31,92 @@ export default function Motos() {
   };
 
   const handleNovaMoto = (moto) => {
-    console.log('✅ Moto cadastrada:', moto);
+    const novaMoto = {
+      ...moto,
+      id: Date.now(),
+      status: 'pingar', // precisa ser pingada no pátio
+      localizacao: null,
+    };
+    setMotosRegistradas([...motosRegistradas, novaMoto]);
+    setMotoSelecionada(novaMoto);
     setMostrarCadastro(false);
+  };
+
+  const handleSelecionarMoto = (moto) => {
+    setMotoSelecionada(moto);
+  };
+
+  const enviarParaMecanica = () => {
+    const atualizada = { ...motoSelecionada, status: 'mecanica', localizacao: null };
+    atualizarMoto(atualizada);
+    setMotoSelecionada(atualizada);
+  };
+
+  const retornarParaPatio = () => {
+    const atualizada = { ...motoSelecionada, status: 'pingar' };
+    atualizarMoto(atualizada);
+    setMotoSelecionada(atualizada);
+  };
+
+  const pingarLocalizacao = () => {
+    const local = { x: Math.random(), y: Math.random() }; // simulação — substitua pelo valor real via mapa
+    const atualizada = {
+      ...motoSelecionada,
+      status: 'patio',
+      localizacao: local,
+    };
+    atualizarMoto(atualizada);
+    setMotoSelecionada(atualizada);
+    Alert.alert('📍 Localização registrada', 'Moto posicionada no pátio!');
+  };
+
+  const atualizarMoto = (atualizada) => {
+    const listaNova = motosRegistradas.map((m) => (m.id === atualizada.id ? atualizada : m));
+    setMotosRegistradas(listaNova);
+  };
+
+  const renderMapaOuStatus = () => {
+    if (!motoSelecionada) return null;
+
+    if (motoSelecionada.status === 'mecanica') {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.mecanicaStatus}>🔧 Esta moto está na mecânica</Text>
+          <TouchableOpacity style={styles.btn} onPress={retornarParaPatio}>
+            <Text style={styles.btnText}>🔙 Retornar ao Pátio</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (motoSelecionada.status === 'pingar') {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.mecanicaStatus}>📍 A moto precisa ser posicionada no pátio</Text>
+          <TouchableOpacity style={styles.btn} onPress={pingarLocalizacao}>
+            <Text style={styles.btnText}>📌 Definir Localização</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (motoSelecionada.status === 'patio') {
+      return (
+        <View style={styles.card}>
+          <MapaPatio motoSelecionada={motoSelecionada} />
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity style={styles.btnSecundario} onPress={pingarLocalizacao}>
+              <Text style={styles.btnText}>📍 Trocar Localização</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.btnAlerta} onPress={enviarParaMecanica}>
+              <Text style={styles.btnText}>🔧 Enviar para Mecânica</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -38,14 +124,13 @@ export default function Motos() {
       <Text style={styles.titulo}>Gestão de Motos no Pátio</Text>
 
       <View style={styles.card}>
-        <BuscaMoto onSelecionarMoto={(moto) => setMotoSelecionada(moto)} />
+        <BuscaMoto
+          onSelecionarMoto={(moto) => handleSelecionarMoto(moto)}
+          listaMotos={motosRegistradas}
+        />
       </View>
 
-      {motoSelecionada && (
-        <View style={styles.card}>
-          <MapaPatio motoSelecionada={motoSelecionada} />
-        </View>
-      )}
+      {renderMapaOuStatus()}
 
       <TouchableOpacity style={styles.btn} onPress={toggleCadastro}>
         <Text style={styles.btnText}>
@@ -55,10 +140,10 @@ export default function Motos() {
 
       {mostrarCadastro && (
         <View style={styles.card}>
-           <CadastroMotoAvancado
-      onRegistrarLocalizacao={handleNovaMoto}
-      onFechar={() => setMostrarCadastro(false)}
-    />
+          <CadastroMotoAvancado
+            onRegistrarLocalizacao={handleNovaMoto}
+            onFechar={() => setMostrarCadastro(false)}
+          />
         </View>
       )}
     </ScrollView>
@@ -102,5 +187,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  btnSecundario: {
+    backgroundColor: '#3b82f6',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  btnAlerta: {
+    backgroundColor: '#ef4444',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  mecanicaStatus: {
+    textAlign: 'center',
+    color: '#f59e0b',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 15,
+  },
+  buttonGroup: {
+    marginTop: 15,
   },
 });

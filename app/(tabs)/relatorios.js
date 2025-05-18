@@ -87,7 +87,7 @@ export default function Relatorios() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Relatório do Pátio</Text>
+      <Text style={styles.header}> Relatório do Pátio</Text>
 
       <View style={styles.filtrosContainer}>
         {['hoje', '15 dias', '30 dias'].map(p => (

@@ -27,7 +27,6 @@ export default function TabsLayout() {
       })}
     >
       <Tabs.Screen name="selecao-patio" options={{ title: 'Pátios' }} />
-      <Tabs.Screen name="mapa" options={{ title: 'Mapa' }} />
       <Tabs.Screen name="relatorios" options={{ title: 'Relatórios' }} />
       <Tabs.Screen name="motos" options={{ title: 'Motos' }} />
       <Tabs.Screen name="configuracoes" options={{ title: 'Configurações' }} />
