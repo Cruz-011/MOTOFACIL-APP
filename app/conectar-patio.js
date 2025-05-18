@@ -21,7 +21,6 @@ export default function ConectarPatio() {
   const [selecionado, setSelecionado] = useState(null);
 
   const buscarESP32 = () => {
-    // Simulação de busca por ESP32
     setDispositivos([
       { id: 'esp32_1', nome: 'ESP32-Central-001' },
       { id: 'esp32_2', nome: 'ESP32-Central-002' },
@@ -48,7 +47,7 @@ export default function ConectarPatio() {
     await AsyncStorage.setItem('@lista_patios', JSON.stringify(lista));
     await AsyncStorage.setItem('@patio_selecionado', JSON.stringify(novoPatio));
 
-    router.replace('/mapa');
+    router.replace('/selecao-patio');
   };
 
   const cancelarCadastro = () => {
@@ -168,7 +167,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#555', // ou qualquer tom cinza
+    backgroundColor: '#555',
   },
   botaoCancelarTexto: {
     color: 'white',
