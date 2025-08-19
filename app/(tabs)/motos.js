@@ -5,273 +5,205 @@ import {
   ScrollView,
   TouchableOpacity,
   Text,
+  TextInput,
   LayoutAnimation,
   Platform,
   UIManager,
-  Alert,
+  FlatList,
+  Modal,
 } from 'react-native';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../../src/theme/colors';
-import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
 import MapaPatio from '../../components/MapaPatio';
-import BuscaMoto from '../../components/BuscaMoto';
+import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 export default function Motos() {
-  const [mostrarCadastro, setMostrarCadastro] = useState(false);
+  const [motos, setMotos] = useState([]);
   const [motoSelecionada, setMotoSelecionada] = useState(null);
-  const [motosRegistradas, setMotosRegistradas] = useState([]);
+  const [mostrarCadastro, setMostrarCadastro] = useState(false);
+  const [busca, setBusca] = useState('');
+  const [modalMoto, setModalMoto] = useState(false);
 
-  useEffect(() => {
-    carregarMotos();
-  }, []);
+  useEffect(() => { carregarMotos(); }, []);
 
   const carregarMotos = async () => {
     const salvas = await AsyncStorage.getItem('motos');
-    if (salvas) {
-      setMotosRegistradas(JSON.parse(salvas));
-    }
+    if (salvas) setMotos(JSON.parse(salvas));
   };
 
-  const salvarMotos = async (motos) => {
-    await AsyncStorage.setItem('motos', JSON.stringify(motos));
+  const salvarMotos = async (lista) => {
+    await AsyncStorage.setItem('motos', JSON.stringify(lista));
   };
 
   const toggleCadastro = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setMostrarCadastro(!mostrarCadastro);
-    setMotoSelecionada(null);
   };
 
   const handleNovaMoto = (moto) => {
-    const novaMoto = {
-      ...moto,
-      id: Date.now(),
-      status: 'pingar',
-      localizacao: null,
-    };
-    const listaAtualizada = [...motosRegistradas, novaMoto];
-    setMotosRegistradas(listaAtualizada);
+    const novaMoto = { ...moto, id: Date.now(), status: 'pingar', localizacao: null };
+    const listaAtualizada = [...motos, novaMoto];
+    setMotos(listaAtualizada);
     salvarMotos(listaAtualizada);
-    setMotoSelecionada(novaMoto);
     setMostrarCadastro(false);
-  };
-
-  const handleSelecionarMoto = (moto) => {
-    setMotoSelecionada(moto);
-    setMostrarCadastro(false);
-  };
-
-  const enviarParaMecanica = () => {
-    const atualizada = { ...motoSelecionada, status: 'mecanica', localizacao: null };
-    atualizarMoto(atualizada);
-    setMotoSelecionada(atualizada);
-  };
-
-  const retornarParaPatio = () => {
-    const atualizada = { ...motoSelecionada, status: 'pingar' };
-    atualizarMoto(atualizada);
-    setMotoSelecionada(atualizada);
-  };
-
-  const pingarLocalizacao = () => {
-    const local = { x: Math.random(), y: Math.random() };
-    const atualizada = {
-      ...motoSelecionada,
-      status: 'patio',
-      localizacao: local,
-    };
-    atualizarMoto(atualizada);
-    setMotoSelecionada(atualizada);
-    Alert.alert('📍 Localização registrada', 'Moto posicionada no pátio!');
   };
 
   const atualizarMoto = (atualizada) => {
-    const listaNova = motosRegistradas.map((m) => (m.id === atualizada.id ? atualizada : m));
-    setMotosRegistradas(listaNova);
-    salvarMotos(listaNova);
+    const lista = motos.map(m => m.id === atualizada.id ? atualizada : m);
+    setMotos(lista);
+    salvarMotos(lista);
+    setMotoSelecionada(atualizada);
   };
 
-  const renderMapaOuStatus = () => {
-    if (!motoSelecionada) return null;
+  // Funções de ação
+  const enviarParaMecanica = (m) => atualizarMoto({ ...m, status: 'mecanica' });
+  const retornarParaPatio = (m) => atualizarMoto({ ...m, status: 'patio' });
+  const pingarLocalizacao = (m) => {
+    const atualizada = {
+      ...m,
+      status: 'patio',
+      localizacao: { x: Math.random(), y: Math.random() },
+    };
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    atualizarMoto(atualizada);
+  };
 
-    if (motoSelecionada.status === 'mecanica') {
-      return (
-        <View style={styles.card}>
-          <Text style={styles.mecanicaStatus}>🔧 Esta moto está na mecânica</Text>
-          <TouchableOpacity style={styles.btn} onPress={retornarParaPatio}>
-            <Text style={styles.btnText}>🔙 Retornar ao Pátio</Text>
-          </TouchableOpacity>
+  const motosNoPatio = motos.filter(m => m.status === 'patio');
+  const motosNaMecanica = motos.filter(m => m.status === 'mecanica');
+
+  const motosFiltradas = motos.filter(m =>
+    m.placa?.toLowerCase().includes(busca.toLowerCase()) ||
+    m.modelo?.toLowerCase().includes(busca.toLowerCase()) ||
+    m.codigo?.toLowerCase().includes(busca.toLowerCase())
+  );
+
+  const abrirModal = (moto) => {
+    setMotoSelecionada(moto);
+    setModalMoto(true);
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Botão cadastro fixo */}
+      <TouchableOpacity style={styles.btnCadastroTopo} onPress={toggleCadastro}>
+        <Text style={styles.btnText}>{mostrarCadastro ? '✖️ Cancelar Cadastro' : '➕ Cadastrar Nova Moto'}</Text>
+      </TouchableOpacity>
+
+      {/* Cadastro */}
+      {mostrarCadastro && (
+        <View style={styles.cardCadastro}>
+          <CadastroMotoAvancado onRegistrarLocalizacao={handleNovaMoto} onFechar={() => setMostrarCadastro(false)} />
         </View>
-      );
-    }
+      )}
 
-    if (motoSelecionada.status === 'pingar') {
-      return (
-        <View style={styles.card}>
-          <Text style={styles.mecanicaStatus}>📍 A moto precisa ser posicionada no pátio</Text>
-          <TouchableOpacity style={styles.btn} onPress={pingarLocalizacao}>
-            <Text style={styles.btnText}>📌 Definir Localização</Text>
-          </TouchableOpacity>
+
+
+      {/* Status */}
+      <View style={styles.statusContainer}>
+        <View style={[styles.statusCard, {backgroundColor: '#d1fae5'}]}>
+          <Text style={[styles.statusTitulo, {color: '#047857'}]}>🏍️ Pátio</Text>
+          <Text style={styles.statusNumero}>{motosNoPatio.length}</Text>
         </View>
-      );
-    }
+        <View style={[styles.statusCard, {backgroundColor: '#fee2e2'}]}>
+          <Text style={[styles.statusTitulo, {color: '#b91c1c'}]}>🔧 Mecânica</Text>
+          <Text style={styles.statusNumero}>{motosNaMecanica.length}</Text>
+        </View>
+      </View>
 
-    if (motoSelecionada.status === 'patio') {
-      return (
-        <View style={styles.card}>
-          <MapaPatio moto={motoSelecionada} />
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity style={styles.btnSecundario} onPress={pingarLocalizacao}>
-              <Text style={styles.btnText}>📍 Trocar Localização</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btnAlerta} onPress={enviarParaMecanica}>
-              <Text style={styles.btnText}>🔧 Enviar para Mecânica</Text>
+      {/* Barra de pesquisa */}
+      <TextInput
+        style={styles.searchInput}
+        placeholder="🔍 Pesquisar moto"
+        value={busca}
+        onChangeText={setBusca}
+      />
+
+      {/* Lista de motos */}
+      <FlatList
+        data={motosFiltradas}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({item}) => (
+          <TouchableOpacity style={[styles.motoItem, {borderLeftColor:
+            item.status === 'patio' ? '#10b981' :
+            item.status === 'mecanica' ? '#ef4444' : '#f59e0b'
+          }]} onPress={() => abrirModal(item)}>
+            <Text style={styles.motoTitulo}>{item.placa || item.codigo} - {item.modelo}</Text>
+            <Text style={styles.motoSub}>Chassi: {item.chassi || 'N/A'}</Text>
+          </TouchableOpacity>
+        )}
+        style={{flex: 1, width: '100%'}}
+        contentContainerStyle={{paddingBottom: 120}}
+      />
+
+      {/* Modal da moto selecionada */}
+      <Modal visible={modalMoto} animationType="slide" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitulo}>{motoSelecionada?.placa || motoSelecionada?.codigo} - {motoSelecionada?.modelo}</Text>
+            {motoSelecionada?.descricao && <Text style={styles.modalSub}>{motoSelecionada.descricao}</Text>}
+            <Text>Status: {motoSelecionada?.status === 'patio' ? '📍 Pátio' : motoSelecionada?.status === 'mecanica' ? '🔧 Mecânica' : '📌 Pendente'}</Text>
+
+            {/* Botões rápidos */}
+            {motoSelecionada?.status === 'pingar' && (
+              <TouchableOpacity style={styles.btnPrimary} onPress={() => pingarLocalizacao(motoSelecionada)}>
+                <Text style={styles.btnText}>📌 Posicionar no Pátio</Text>
+              </TouchableOpacity>
+            )}
+            {motoSelecionada?.status === 'patio' && (
+              <>
+                <TouchableOpacity style={styles.btnSecondary} onPress={() => pingarLocalizacao(motoSelecionada)}>
+                  <Text style={styles.btnText}>📍 Trocar Localização</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnDanger} onPress={() => enviarParaMecanica(motoSelecionada)}>
+                  <Text style={styles.btnText}>🔧 Enviar para Mecânica</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {motoSelecionada?.status === 'mecanica' && (
+              <TouchableOpacity style={styles.btnPrimary} onPress={() => retornarParaPatio(motoSelecionada)}>
+                <Text style={styles.btnText}>🔙 Retornar ao Pátio</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity style={[styles.btnSecondary, {marginTop: 10}]} onPress={() => setModalMoto(false)}>
+              <Text style={styles.btnText}>✖️ Fechar</Text>
             </TouchableOpacity>
           </View>
         </View>
-      );
-    }
-
-    return null;
-  };
-
-  // Lista de motos no pátio
-  const motosNoPatio = motosRegistradas.filter((m) => m.status === 'patio');
-
-  return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.titulo}>Gestão de Motos no Pátio</Text>
-
-      <View style={styles.card}>
-        <BuscaMoto
-          onSelecionarMoto={handleSelecionarMoto}
-          motos={motosRegistradas}
-        />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.titulo}>Motos no Pátio</Text>
-        {motosNoPatio.length === 0 ? (
-          <Text style={{ textAlign: 'center', color: colors.secondary }}>Nenhuma moto no pátio</Text>
-        ) : (
-          motosNoPatio.map((moto) => (
-            <TouchableOpacity
-              key={moto.id}
-              style={styles.motoItem}
-              onPress={() => handleSelecionarMoto(moto)}
-            >
-              <Text style={styles.motoTitulo}>
-                {moto.placa || moto.codigo} - {moto.modelo}
-              </Text>
-              <Text style={styles.motoSub}>
-                Chassi: {moto.chassi || 'N/A'} | Código: {moto.codigo}
-              </Text>
-              {moto.descricao ? (
-                <Text style={styles.motoSub}>Descrição: {moto.descricao}</Text>
-              ) : null}
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-
-      {renderMapaOuStatus()}
-
-      <TouchableOpacity style={styles.btn} onPress={toggleCadastro}>
-        <Text style={styles.btnText}>
-          {mostrarCadastro ? '✖️ Cancelar Cadastro' : '➕ Cadastrar Nova Moto'}
-        </Text>
-      </TouchableOpacity>
-
-      {mostrarCadastro && (
-        <View style={styles.card}>
-          <CadastroMotoAvancado
-            onRegistrarLocalizacao={handleNovaMoto}
-            onFechar={() => setMostrarCadastro(false)}
-          />
-        </View>
-      )}
-    </ScrollView>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    backgroundColor: colors.background,
-  },
-  container: {
-    padding: 20,
-    paddingBottom: 60,
-    alignItems: 'center',
-  },
-  titulo: {
-    fontSize: 24,
-    color: colors.primary,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    textAlign: 'center',
-    marginTop: 25,
-  },
-  card: {
+  container: {flex: 1, padding: 15, backgroundColor: colors.background, alignItems: 'center',paddingTop:50},
+  btnCadastroTopo: {
+    backgroundColor: colors.primary,
+    padding: 14,
+    borderRadius: 12,
     width: '100%',
     maxWidth: 600,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 25,
-    elevation: 3,
-  },
-  btn: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  btnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  btnSecundario: {
-    backgroundColor: '#3b82f6',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  btnAlerta: {
-    backgroundColor: '#ef4444',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  mecanicaStatus: {
-    textAlign: 'center',
-    color: '#f59e0b',
-    fontWeight: 'bold',
-    fontSize: 16,
     marginBottom: 15,
   },
-  buttonGroup: {
-    gap: 12,
-  },
-  motoItem: {
-    backgroundColor: colors.card,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  motoTitulo: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: colors.primary,
-  },
-  motoSub: {
-    fontSize: 13,
-    color: colors.secondary,
-  },
+  cardCadastro: {width: '100%', maxWidth: 600, marginBottom: 15},
+  statusContainer: {flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginBottom: 15},
+  statusCard: {alignItems: 'center', borderRadius: 12, padding: 15, width: '45%'},
+  statusTitulo: {fontSize: 16, fontWeight: 'bold'},
+  statusNumero: {fontSize: 24, fontWeight: 'bold', marginTop: 5},
+  searchInput: {width: '100%', maxWidth: 600, backgroundColor: '#fff', padding: 12, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#ddd'},
+  motoItem: {backgroundColor: colors.card, padding: 12, borderRadius: 12, marginBottom: 10, borderLeftWidth: 5},
+  motoTitulo: {fontWeight: 'bold', fontSize: 15, color: colors.primary},
+  motoSub: {fontSize: 13, color: colors.secondary},
+  modalContainer: {flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center'},
+  modalContent: {backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '90%', maxWidth: 400},
+  modalTitulo: {fontSize: 18, fontWeight: 'bold', marginBottom: 10},
+  modalSub: {fontSize: 14, marginBottom: 10},
+  btnPrimary: {backgroundColor: colors.primary, padding: 12, borderRadius: 10, marginTop: 10},
+  btnSecondary: {backgroundColor: '#3b82f6', padding: 12, borderRadius: 10, marginTop: 10},
+  btnDanger: {backgroundColor: '#ef4444', padding: 12, borderRadius: 10, marginTop: 10},
+  btnText: {color: '#fff', fontWeight: 'bold', textAlign: 'center'},
 });
