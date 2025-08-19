@@ -44,6 +44,7 @@ export default function Motos() {
   const toggleCadastro = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setMostrarCadastro(!mostrarCadastro);
+    setMotoSelecionada(null);
   };
 
   const handleNovaMoto = (moto) => {
@@ -62,6 +63,7 @@ export default function Motos() {
 
   const handleSelecionarMoto = (moto) => {
     setMotoSelecionada(moto);
+    setMostrarCadastro(false);
   };
 
   const enviarParaMecanica = () => {
@@ -122,7 +124,7 @@ export default function Motos() {
     if (motoSelecionada.status === 'patio') {
       return (
         <View style={styles.card}>
-          <MapaPatio motoSelecionada={motoSelecionada} />
+          <MapaPatio moto={motoSelecionada} />
           <View style={styles.buttonGroup}>
             <TouchableOpacity style={styles.btnSecundario} onPress={pingarLocalizacao}>
               <Text style={styles.btnText}>📍 Trocar Localização</Text>
@@ -138,15 +140,43 @@ export default function Motos() {
     return null;
   };
 
+  // Lista de motos no pátio
+  const motosNoPatio = motosRegistradas.filter((m) => m.status === 'patio');
+
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.titulo}>Gestão de Motos no Pátio</Text>
 
       <View style={styles.card}>
         <BuscaMoto
-          onSelecionarMoto={(moto) => handleSelecionarMoto(moto)}
-          listaMotos={motosRegistradas}
+          onSelecionarMoto={handleSelecionarMoto}
+          motos={motosRegistradas}
         />
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.titulo}>Motos no Pátio</Text>
+        {motosNoPatio.length === 0 ? (
+          <Text style={{ textAlign: 'center', color: colors.secondary }}>Nenhuma moto no pátio</Text>
+        ) : (
+          motosNoPatio.map((moto) => (
+            <TouchableOpacity
+              key={moto.id}
+              style={styles.motoItem}
+              onPress={() => handleSelecionarMoto(moto)}
+            >
+              <Text style={styles.motoTitulo}>
+                {moto.placa || moto.codigo} - {moto.modelo}
+              </Text>
+              <Text style={styles.motoSub}>
+                Chassi: {moto.chassi || 'N/A'} | Código: {moto.codigo}
+              </Text>
+              {moto.descricao ? (
+                <Text style={styles.motoSub}>Descrição: {moto.descricao}</Text>
+              ) : null}
+            </TouchableOpacity>
+          ))
+        )}
       </View>
 
       {renderMapaOuStatus()}
@@ -228,5 +258,20 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     gap: 12,
+  },
+  motoItem: {
+    backgroundColor: colors.card,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  motoTitulo: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: colors.primary,
+  },
+  motoSub: {
+    fontSize: 13,
+    color: colors.secondary,
   },
 });

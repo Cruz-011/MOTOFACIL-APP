@@ -8,18 +8,25 @@ const modelosDisponiveis = [
   { nome: 'Mottu Pop'},
 ];
 
-const cores = ['azul', 'verde', 'vermelha'];
+function gerarCodigoAleatorio() {
+  return 'MOTO-' + Math.floor(Math.random() * 1000000);
+}
 
-export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar }) {
+export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar, mostrarCampoCodigo }) {
   const [placa, setPlaca] = useState('');
   const [chassi, setChassi] = useState('');
   const [modelo, setModelo] = useState('');
-  const [cor, setCor] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [codigo, setCodigo] = useState('');
+  const [descricao, setDescricao] = useState('');
 
   const validar = () => {
-    if (!placa || !modelo || !categoria) {
-      Alert.alert('Campos obrigatórios', 'Placa, Modelo e Categoria são obrigatórios.');
+    if (!modelo || !categoria) {
+      Alert.alert('Campos obrigatórios', 'Modelo e Categoria são obrigatórios.');
+      return false;
+    }
+    if (!placa && !chassi && !codigo) {
+      Alert.alert('Campos obrigatórios', 'Preencha pelo menos Placa, Chassi ou Código.');
       return false;
     }
     return true;
@@ -28,12 +35,15 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar 
   const registrar = () => {
     if (!validar()) return;
 
+    const codigoFinal = codigo || (!placa && !chassi ? gerarCodigoAleatorio() : '');
+
     onRegistrarLocalizacao?.({
       placa,
       chassi,
       modelo,
-      cor,
       categoria,
+      codigo: placa || chassi ? codigo : codigoFinal,
+      descricao,
       x: 0.5,
       y: 0.6,
     });
@@ -60,6 +70,15 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar 
         value={chassi}
         onChangeText={setChassi}
       />
+      {mostrarCampoCodigo && (
+        <TextInput
+          style={styles.input}
+          placeholder="Código (opcional, gerado se vazio)"
+          placeholderTextColor={colors.secondary}
+          value={codigo}
+          onChangeText={setCodigo}
+        />
+      )}
 
       <Text style={styles.label}>Modelo</Text>
       <View style={styles.opcoes}>
@@ -70,25 +89,32 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar 
             onPress={() => setModelo(m.nome)}
           >
             <Text style={styles.opcaoTitulo}>{m.nome}</Text>
-            <Text style={styles.opcaoDescricao}>{m.descricao}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
+      <Text style={styles.label}>Categoria</Text>
+      <View style={styles.categorias}>
+        {['aluguel', 'aquisição'].map((tipo) => (
+          <TouchableOpacity
+            key={tipo}
+            style={[styles.categoriaBtn, categoria === tipo && styles.categoriaSelecionada]}
+            onPress={() => setCategoria(tipo)}
+          >
+            <Text style={styles.categoriaText}>{tipo.toUpperCase()}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-<Text style={styles.label}>Categoria</Text>
-<View style={styles.categorias}>
-  {['aluguel', 'aquisição'].map((tipo) => (
-    <TouchableOpacity
-      key={tipo}
-      style={[styles.categoriaBtn, categoria === tipo && styles.categoriaSelecionada]}
-      onPress={() => setCategoria(tipo)}
-    >
-      <Text style={styles.categoriaText}>{tipo.toUpperCase()}</Text>
-    </TouchableOpacity>
-  ))}
-</View>
-
+      <Text style={styles.label}>Descrição</Text>
+      <TextInput
+        style={[styles.input, { minHeight: 60 }]}
+        placeholder="Digite uma descrição sobre a moto (opcional)"
+        placeholderTextColor={colors.secondary}
+        value={descricao}
+        onChangeText={setDescricao}
+        multiline
+      />
 
       <TouchableOpacity style={styles.btnSalvar} onPress={registrar}>
         <Text style={styles.btnText}>📍 Registrar Localização</Text>
@@ -152,33 +178,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text,
   },
-
-  cores: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  corBtn: {
-    flex: 1,
-    padding: 10,
-    maxHeight: 40,
-    minWidth:60,
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    alignItems: 'center',
-  },
-  corSelecionada: {
-    borderColor: colors.primary,
-    backgroundColor: '#00224433',
-  },
-  corText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
   btnSalvar: {
     backgroundColor: colors.primary,
     padding: 16,
@@ -196,26 +195,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-
   categorias: {
-  flexDirection: 'row',
-  gap: 10,
-  marginBottom: 16,
-},
-categoriaBtn: {
-  flex: 1,
-  padding: 12,
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: colors.secondary,
-  alignItems: 'center',
-},
-categoriaSelecionada: {
-  borderColor: colors.primary,
-  backgroundColor: '#00224433',
-},
-categoriaText: {
-  fontWeight: 'bold',
-  color: colors.text,
-},
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  categoriaBtn: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    alignItems: 'center',
+  },
+  categoriaSelecionada: {
+    borderColor: colors.primary,
+    backgroundColor: '#00224433',
+  },
+  categoriaText: {
+    fontWeight: 'bold',
+    color: colors.text,
+  },
 });
