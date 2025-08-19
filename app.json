@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "MotoFacilApp53",
-    "slug": "MotoFacilApp53",
+    "name": "MotoFacilApp",
+    "slug": "MotoFacilApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "motofacilapp53",
+    "scheme": "motofacilapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

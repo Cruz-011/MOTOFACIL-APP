@@ -1,13 +1,14 @@
-// app/(tabs)/configuracoes.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import colors from '../../src/theme/colors';
+import { ThemeContext } from '../../src/context/ThemeContext';
 
 export default function Configuracoes() {
+  const { temaEscuro, toggleTema, idioma, mudarIdioma } = useContext(ThemeContext);
+
   const [nomeUsuario, setNomeUsuario] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -30,100 +31,91 @@ export default function Configuracoes() {
     })();
   }, []);
 
-  const alterarDados = () => {
-    router.push('/(tabs)/alterar-dados'); // aqui você pode criar essa tela depois
-  };
-
-  const alterarSenha = () => {
-    router.push('/(tabs)/alterar-senha'); // mesma coisa, tela futura
-  };
-
-  const alterarPatio = () => {
-    router.push('/(tabs)/selecao-patio');
-  };
-
   const sairConta = async () => {
     await AsyncStorage.clear();
     router.replace('/');
   };
 
+  const themeStyles = temaEscuro ? darkStyles : lightStyles;
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.titulo}>Configurações</Text>
+    <ScrollView style={[styles.container, themeStyles.container]}>
+      <Text style={[styles.titulo, themeStyles.titulo]}>
+        {idioma === 'pt' ? 'Configurações' : idioma === 'es' ? 'Configuración' : 'Settings'}
+      </Text>
 
-      {/* Área Dados da Conta */}
-      <View style={styles.card}>
-        <Text style={styles.secaoTitulo}>Conta</Text>
-
-        <Text style={styles.label}>Nome:</Text>
-        <Text style={styles.valor}>{nomeUsuario || 'Não informado'}</Text>
-
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.valor}>{email || 'Não informado'}</Text>
-
-        <Text style={styles.label}>Senha:</Text>
-        <Text style={styles.valor}>{senha ? '******' : 'Não informado'}</Text>
-
-        <TouchableOpacity style={styles.botao} onPress={alterarDados}>
-          <Text style={styles.botaoTexto}>Alterar Dados</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.botao} onPress={alterarSenha}>
-          <Text style={styles.botaoTexto}>Alterar Senha</Text>
-        </TouchableOpacity>
+      {/* Tema */}
+      <View style={[styles.card, themeStyles.card]}>
+        <Text style={[styles.secaoTitulo, themeStyles.secaoTitulo]}>
+          {idioma === 'pt' ? 'Tema' : idioma === 'es' ? 'Tema' : 'Theme'}
+        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+          <Text style={[styles.label, themeStyles.label]}>
+            {idioma === 'pt' ? 'Modo Escuro' : idioma === 'es' ? 'Modo Oscuro' : 'Dark Mode'}
+          </Text>
+          <Switch value={temaEscuro} onValueChange={toggleTema} />
+        </View>
       </View>
 
-      {/* Área Pátio Atual */}
-      <View style={styles.card}>
-        <Text style={styles.secaoTitulo}>Pátio Atual</Text>
-
-        {patioSelecionado ? (
-          <>
-            <Text style={styles.label}>Nome:</Text>
-            <Text style={styles.valor}>{patioSelecionado.nome}</Text>
-
-            <Text style={styles.label}>Tamanho:</Text>
-            <Text style={styles.valor}>
-              {patioSelecionado.estrutura?.width} x {patioSelecionado.estrutura?.height}
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.valor}>Nenhum pátio selecionado.</Text>
-        )}
-
-        <TouchableOpacity style={styles.botao} onPress={alterarPatio}>
-          <Text style={styles.botaoTexto}>Alterar Pátio</Text>
-        </TouchableOpacity>
+      {/* Idioma */}
+      <View style={[styles.card, themeStyles.card]}>
+        <Text style={[styles.secaoTitulo, themeStyles.secaoTitulo]}>
+          {idioma === 'pt' ? 'Idioma' : idioma === 'es' ? 'Idioma' : 'Language'}
+        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10 }}>
+          {['pt','es','en'].map((lang) => (
+            <TouchableOpacity
+              key={lang}
+              style={[styles.botaoPequeno, idioma === lang ? themeStyles.botaoSelecionado : themeStyles.botao]}
+              onPress={() => mudarIdioma(lang)}
+            >
+              <Text style={themeStyles.botaoTexto}>
+                {lang === 'pt' ? '🇧🇷 PT' : lang === 'es' ? '🇪🇸 ES' : '🇺🇸 EN'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      {/* Botão Sair */}
+      {/* Sair */}
       <TouchableOpacity style={[styles.botao, { backgroundColor: 'red', marginTop: 20 }]} onPress={sairConta}>
-        <Text style={styles.botaoTexto}>Sair da Conta</Text>
+        <Text style={[styles.botaoTexto, { color: '#fff' }]}>
+          {idioma === 'pt' ? 'Sair da Conta' : idioma === 'es' ? 'Cerrar Sesión' : 'Sign Out'}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 20, paddingTop: 60 },
-  titulo: { fontSize: 24, fontWeight: 'bold', color: colors.primary, textAlign: 'center', marginBottom: 30 },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  secaoTitulo: { fontSize: 18, fontWeight: 'bold', color: colors.primary, marginBottom: 10 },
-  label: { fontSize: 14, color: colors.secondary, marginTop: 10 },
-  valor: { fontSize: 16, color: colors.text, fontWeight: 'bold' },
-  botao: {
-    backgroundColor: colors.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  botaoTexto: { color: colors.text, fontWeight: 'bold', fontSize: 16 },
+  container: { flex: 1, padding: 20, paddingTop: 60 },
+  titulo: { fontSize: 26, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 },
+  card: { borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1 },
+  secaoTitulo: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  label: { fontSize: 14, marginTop: 10 },
+  botao: { padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 16 },
+  botaoPequeno: { padding: 10, borderRadius: 8, minWidth: 80, alignItems: 'center' },
+  botaoTexto: { fontSize: 16, fontWeight: 'bold' },
+});
+
+const lightStyles = StyleSheet.create({
+  container: { backgroundColor: '#f5f5f5' },
+  card: { backgroundColor: '#fff', borderColor: '#3b82f6' },
+  titulo: { color: '#3b82f6' },
+  secaoTitulo: { color: '#3b82f6' },
+  label: { color: '#6b7280' },
+  botao: { backgroundColor: '#3b82f6' },
+  botaoTexto: { color: '#fff' },
+  botaoSelecionado: { backgroundColor: '#2563eb' },
+});
+
+const darkStyles = StyleSheet.create({
+  container: { backgroundColor: '#1f2937' },
+  card: { backgroundColor: '#374151', borderColor: '#2563eb' },
+  titulo: { color: '#3b82f6' },
+  secaoTitulo: { color: '#3b82f6' },
+  label: { color: '#d1d5db' },
+  botao: { backgroundColor: '#3b82f6' },
+  botaoTexto: { color: '#fff' },
+  botaoSelecionado: { backgroundColor: '#2563eb' },
 });

@@ -1,14 +1,12 @@
-import { Stack, usePathname } from 'expo-router';
+// app/_layout.js
+import React from 'react';
+import { ThemeProvider } from '../src/context/ThemeContext';
+import { Stack } from 'expo-router';
 
 export default function RootLayout() {
-  const pathname = usePathname();
-
-  const semTabs = pathname === '/' || pathname === '/index' || pathname === '/patio-config';
-
   return (
-    <Stack
-      screenOptions={{ headerShown: false }}
-      initialRouteName={semTabs ? 'index' : undefined}
-    />
+    <ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </ThemeProvider>
   );
 }

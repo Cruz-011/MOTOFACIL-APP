@@ -1,8 +1,31 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import colors from '../../src/theme/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useContext } from 'react';
+import { ThemeContext } from '../../src/context/ThemeContext';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const { temaEscuro, idioma } = useContext(ThemeContext);
+
+  // Definindo cores dinâmicas pelo tema
+  const colors = {
+    primary: temaEscuro ? '#2563eb' : '#007bff',
+    secondary: temaEscuro ? '#aaa' : '#666',
+    background: temaEscuro ? '#121212' : '#f2f2f2',
+  };
+
+  const extraSpace = 10;
+
+  // Traduções simples para exemplo
+  const traducoes = {
+    pt: { patios: 'Pátios', relatorios: 'Relatórios', motos: 'Motos', configuracoes: 'Configurações' },
+    en: { patios: 'Yards', relatorios: 'Reports', motos: 'Bikes', configuracoes: 'Settings' },
+    es: { patios: 'Patios', relatorios: 'Informes', motos: 'Motos', configuracoes: 'Configuración' },
+  };
+
+  const t = (key) => traducoes[idioma][key] || key;
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
@@ -12,24 +35,25 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.background,
           borderTopColor: colors.primary,
-          height: 60,
+          height: 40 + insets.bottom + extraSpace,
+          paddingBottom: insets.bottom + extraSpace,
         },
         tabBarIcon: ({ color, size }) => {
           const icons = {
             'selecao-patio': 'home',
-            mapa: 'map',
             relatorios: 'analytics',
             motos: 'bicycle',
             configuracoes: 'settings',
+            mapa: 'map',
           };
           return <Ionicons name={icons[route.name] || 'ellipse'} size={size} color={color} />;
         },
       })}
     >
-      <Tabs.Screen name="selecao-patio" options={{ title: 'Pátios' }} />
-      <Tabs.Screen name="relatorios" options={{ title: 'Relatórios' }} />
-      <Tabs.Screen name="motos" options={{ title: 'Motos' }} />
-      <Tabs.Screen name="configuracoes" options={{ title: 'Configurações' }} />
+      <Tabs.Screen name="selecao-patio" options={{ title: t('patios') }} />
+      <Tabs.Screen name="relatorios" options={{ title: t('relatorios') }} />
+      <Tabs.Screen name="motos" options={{ title: t('motos') }} />
+      <Tabs.Screen name="configuracoes" options={{ title: t('configuracoes') }} />
     </Tabs>
   );
 }
