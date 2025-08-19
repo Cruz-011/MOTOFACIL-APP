@@ -12,7 +12,7 @@ export default function TabsLayout() {
   const colors = {
     primary: temaEscuro ? '#2563eb' : '#007bff',
     secondary: temaEscuro ? '#aaa' : '#666',
-    background: temaEscuro ? '#121212' : '#f2f2f2',
+    background: temaEscuro ? '#1f2937' : '#f2f2f2',
   };
 
   const extraSpace = 10;
@@ -35,8 +35,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.background,
           borderTopColor: colors.primary,
-          height: 40 + insets.bottom + extraSpace,
+          height: 45 + insets.bottom + extraSpace,
           paddingBottom: insets.bottom + extraSpace,
+          paddingTop: 10,
         },
         tabBarIcon: ({ color, size }) => {
           const icons = {
