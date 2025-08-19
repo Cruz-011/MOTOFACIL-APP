@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import colors from '../../src/theme/colors';
+import colors from '../../src/theme/colors.js';
 import { ThemeContext } from '../../src/context/ThemeContext';
 
 const mockRelatorio = {

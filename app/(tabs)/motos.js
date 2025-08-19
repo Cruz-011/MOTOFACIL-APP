@@ -13,7 +13,7 @@ import {
   Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import colors from '../../src/theme/colors';
+import colors from '../../src/theme/colors.js';
 import MapaPatio from '../../components/MapaPatio';
 import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
 import { ThemeContext } from '../../src/context/ThemeContext';

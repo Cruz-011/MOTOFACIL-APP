@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import * as Location from 'expo-location';
-import colors from '../src/theme/colors';
+import colors from '../src/theme/colors.js';
 
 const MAP_WIDTH = 300;
 const MAP_HEIGHT = 300;

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import colors from '../src/theme/colors';
+import colors from '../src/theme/colors.js';
 
 export default function Login() {
   const [usuario, setUsuario] = useState('');
