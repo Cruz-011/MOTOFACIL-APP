@@ -32,8 +32,10 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar,
       return false;
     }
     if (!placa && !chassi && !codigo) {
-      Alert.alert('Campos obrigatórios', 'Preencha pelo menos Placa, Chassi ou Código.');
-      return false;
+      Alert.alert(
+        'Identificação necessária',
+        'A moto não possui placa ou chassi. Será gerado um código único automaticamente.'
+      );
     }
     return true;
   };
@@ -41,14 +43,15 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar,
   const registrar = () => {
     if (!validar()) return;
 
-    const codigoFinal = codigo || (!placa && !chassi ? gerarCodigoAleatorio() : '');
+    // Se não tiver placa nem chassi, gera código único
+    const codigoFinal = placa || chassi ? codigo || '' : codigo || gerarCodigoAleatorio();
 
     onRegistrarLocalizacao?.({
-      placa,
-      chassi,
+      placa: placa || null,
+      chassi: chassi || null,
       modelo,
       categoria,
-      codigo: placa || chassi ? codigo : codigoFinal,
+      codigo: codigoFinal,
       descricao,
       x: 0.5,
       y: 0.6,
@@ -71,7 +74,7 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar,
       />
       <TextInput
         style={[styles.input, { backgroundColor: tema.card, color: tema.texto, borderColor: tema.primary }]}
-        placeholder="Chassi (opcional)"
+        placeholder="Chassi"
         placeholderTextColor={tema.secundario}
         value={chassi}
         onChangeText={setChassi}
@@ -79,7 +82,7 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar,
       {mostrarCampoCodigo && (
         <TextInput
           style={[styles.input, { backgroundColor: tema.card, color: tema.texto, borderColor: tema.primary }]}
-          placeholder="Código (opcional, gerado se vazio)"
+          placeholder="Código (opcional, será gerado se vazio)"
           placeholderTextColor={tema.secundario}
           value={codigo}
           onChangeText={setCodigo}

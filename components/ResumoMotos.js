@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import colors from '../src/theme/colors';
 
-export default function ResumoMotos({ total, classificacao, categorias }) {
+export default function ResumoMotos({ total, categorias }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Resumo do Pátio</Text>
@@ -10,13 +10,6 @@ export default function ResumoMotos({ total, classificacao, categorias }) {
       <View style={styles.linha}>
         <Text style={styles.label}>Total de Motos:</Text>
         <Text style={styles.valor}>{total}</Text>
-      </View>
-
-      <View style={styles.subsection}>
-        <Text style={styles.subtitulo}>Classificação por Cor:</Text>
-        <Text style={styles.detalhe}>🟩 Verde: {classificacao.verde}</Text>
-        <Text style={styles.detalhe}>🟦 Azul: {classificacao.azul}</Text>
-        <Text style={styles.detalhe}>🟥 Vermelha: {classificacao.vermelha}</Text>
       </View>
 
       <View style={styles.subsection}>

@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  ActivityIndicator,
-} from 'react-native';
-import * as Location from 'expo-location';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import colors from '../src/theme/colors.js';
 
 const MAP_WIDTH = 300;
@@ -16,10 +8,10 @@ const MAP_HEIGHT = 300;
 export default function MapaPatio({ motoSelecionada }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [posicaoUsuario, setPosicaoUsuario] = useState({ x: 0.1, y: 0.9 });
-  const [carregando, setCarregando] = useState(true);
+  const [carregando, setCarregando] = useState(false);
 
-  const x = motoSelecionada?.x ?? 0.4;
-  const y = motoSelecionada?.y ?? 0.7;
+  const x = motoSelecionada?.localizacao?.x ?? 0.4;
+  const y = motoSelecionada?.localizacao?.y ?? 0.7;
 
   const left = x * MAP_WIDTH;
   const top = y * MAP_HEIGHT;
@@ -27,19 +19,24 @@ export default function MapaPatio({ motoSelecionada }) {
   const leftUser = posicaoUsuario.x * MAP_WIDTH;
   const topUser = posicaoUsuario.y * MAP_HEIGHT;
 
+  const distancia = Math.sqrt(Math.pow(left - leftUser, 2) + Math.pow(top - topUser, 2)) * 100;
+
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        // Aqui futuramente calcula a posição real
-        setPosicaoUsuario({ x: 0.1, y: 0.9 });
-      }
-      setCarregando(false);
-    })();
+    setPosicaoUsuario({ x: 0.1, y: 0.9 });
   }, []);
+
+  const renderLinha = () => {
+    const largura = Math.sqrt(Math.pow(left - leftUser, 2) + Math.pow(top - topUser, 2));
+    const angulo = Math.atan2(top - topUser, left - leftUser) * (180 / Math.PI);
+    return (
+      <View  
+      />
+    );
+  };
 
   const renderMapa = () => (
     <View style={styles.mapa}>
+      {renderLinha()}
       <View style={[styles.ponto, styles.moto, { left, top }]}>
         <Text style={styles.icone}>🏍</Text>
       </View>
@@ -53,45 +50,43 @@ export default function MapaPatio({ motoSelecionada }) {
     <View style={styles.wrapper}>
       <Text style={styles.titulo}>🗺️ Mapa do Pátio</Text>
 
-      {carregando ? (
-        <ActivityIndicator size="large" color={colors.primary} />
-      ) : (
-        <>
-          {renderMapa()}
+      {carregando ? <ActivityIndicator size="large" color={colors.primary} /> : renderMapa()}
 
-          <View style={styles.infoBox}>
-            {motoSelecionada ? (
-              <>
-                <Text style={styles.label}>Placa:</Text>
-                <Text style={styles.valor}>{motoSelecionada.placa}</Text>
-                <Text style={styles.label}>Modelo:</Text>
-                <Text style={styles.valor}>{motoSelecionada.modelo || 'Não informado'}</Text>
-                <Text style={styles.label}>Categoria:</Text>
-                <Text style={styles.valor}>{motoSelecionada.categoria || 'Não informado'}</Text>
-              </>
-            ) : (
-              <Text style={styles.valor}>Nenhuma moto selecionada</Text>
-            )}
+      {motoSelecionada && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{motoSelecionada.modelo || 'Moto'}</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Placa:</Text>
+            <Text style={styles.valor}>{motoSelecionada.placa || 'N/A'}</Text>
           </View>
-
-          <TouchableOpacity
-            style={styles.expandirBtn}
-            onPress={() => setModalVisible(true)}
-          >
-            <Text style={styles.expandirText}>🔍 Ver em tela cheia</Text>
-          </TouchableOpacity>
-        </>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Chassi:</Text>
+            <Text style={styles.valor}>{motoSelecionada.chassi || 'N/A'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Categoria:</Text>
+            <Text style={styles.valor}>{motoSelecionada.categoria || 'N/A'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Status:</Text>
+            <Text style={styles.valor}>{motoSelecionada.status}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Distância:</Text>
+            <Text style={styles.valor}>{distancia.toFixed(1)} m</Text>
+          </View>
+        </View>
       )}
 
-      {/* MODAL PREMIUM */}
+      <TouchableOpacity style={styles.expandirBtn} onPress={() => setModalVisible(true)}>
+        <Text style={styles.expandirText}>🔍 Ver em tela cheia</Text>
+      </TouchableOpacity>
+
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitulo}>🧭 Mapa em Tela Cheia</Text>
           {renderMapa()}
-          <TouchableOpacity
-            style={styles.modalFecharBtn}
-            onPress={() => setModalVisible(false)}
-          >
+          <TouchableOpacity style={styles.modalFecharBtn} onPress={() => setModalVisible(false)}>
             <Text style={styles.modalFecharText}>Fechar</Text>
           </TouchableOpacity>
         </View>
@@ -101,16 +96,8 @@ export default function MapaPatio({ motoSelecionada }) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  titulo: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 8,
-  },
+  wrapper: { alignItems: 'center', gap: 16 },
+  titulo: { fontSize: 20, fontWeight: '600', color: colors.primary, marginBottom: 8 },
   mapa: {
     width: MAP_WIDTH,
     height: MAP_HEIGHT,
@@ -120,75 +107,34 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     position: 'relative',
   },
-  ponto: {
-    position: 'absolute',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  moto: {
-    backgroundColor: '#ff4d4d',
-  },
-  usuario: {
-    backgroundColor: '#4d94ff',
-  },
-  icone: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  infoBox: {
-    backgroundColor: colors.card,
+  ponto: { position: 'absolute', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', zIndex: 2 },
+  moto: { backgroundColor: '#ff4d4d' },
+  usuario: { backgroundColor: '#4d94ff' },
+  icone: { fontSize: 16, color: '#fff' },
+  card: {
+    backgroundColor: '#fff',
     padding: 14,
     borderRadius: 12,
     width: '100%',
-    maxWidth: 300,
+    maxWidth: 320,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
     marginTop: 12,
   },
-  label: {
-    fontSize: 14,
-    color: colors.secondary,
-  },
-  valor: {
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: 8,
-  },
-  expandirBtn: {
-    
-    backgroundColor: colors.primary,
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 0,
-    marginBottom: 20,
-  },
-  expandirText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-  },
-  modalTitulo: {
-    fontSize: 22,
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-  modalFecharBtn: {
-    marginTop: 20,
-    backgroundColor: '#444',
-    padding: 12,
-    borderRadius: 10,
-  },
-  modalFecharText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', width: '100%', marginBottom: 10 },
+  infoRow: { flexDirection: 'row', width: '48%', marginBottom: 6 },
+  label: { fontWeight: 'bold', marginRight: 4 },
+  valor: {},
+  expandirBtn: { backgroundColor: colors.primary, padding: 12, borderRadius: 10, marginTop: 10, marginBottom: 20 },
+  expandirText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
+  modalContainer: { flex: 1, backgroundColor: colors.background, padding: 20, justifyContent: 'center', alignItems: 'center', gap: 20 },
+  modalTitulo: { fontSize: 22, color: colors.primary, fontWeight: 'bold' },
+  modalFecharBtn: { marginTop: 20, backgroundColor: '#444', padding: 12, borderRadius: 10 },
+  modalFecharText: { color: '#fff', fontWeight: 'bold' },
 });

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Text,
   TextInput,
@@ -11,11 +10,11 @@ import {
   UIManager,
   FlatList,
   Modal,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import colors from '../../src/theme/colors.js';
-import MapaPatio from '../../components/MapaPatio';
 import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
+import MapaPatio from '../../components/MapaPatio';
 import { ThemeContext } from '../../src/context/ThemeContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -30,6 +29,7 @@ export default function Motos() {
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
   const [busca, setBusca] = useState('');
   const [modalMoto, setModalMoto] = useState(false);
+  const [mostrarMapa, setMostrarMapa] = useState(false);
 
   useEffect(() => { carregarMotos(); }, []);
 
@@ -86,6 +86,7 @@ export default function Motos() {
   const abrirModal = (moto) => {
     setMotoSelecionada(moto);
     setModalMoto(true);
+    setMostrarMapa(false);
   };
 
   // cores dinâmicas
@@ -104,6 +105,7 @@ export default function Motos() {
     trocarLocalizacao: idioma === 'pt' ? '📍 Trocar Localização' : idioma === 'es' ? '📍 Cambiar Localización' : '📍 Change Location',
     enviarMecanica: idioma === 'pt' ? '🔧 Enviar para Mecânica' : idioma === 'es' ? '🔧 Enviar a Mecánica' : '🔧 Send to Mechanics',
     retornarPatio: idioma === 'pt' ? '🔙 Retornar ao Pátio' : idioma === 'es' ? '🔙 Regresar al Patio' : '🔙 Return to Yard',
+    localizar: idioma === 'pt' ? '🗺️ Localizar Moto' : idioma === 'es' ? '🗺️ Localizar Moto' : '🗺️ Locate Bike',
     fechar: idioma === 'pt' ? '✖️ Fechar' : idioma === 'es' ? '✖️ Cerrar' : '✖️ Close',
   };
 
@@ -154,37 +156,52 @@ export default function Motos() {
         contentContainerStyle={{paddingBottom: 120}}
       />
 
+      {/* Modal da Moto */}
       <Modal visible={modalMoto} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: tema.card }]}>
-            <Text style={[styles.modalTitulo, { color: tema.texto }]}>{motoSelecionada?.placa || motoSelecionada?.codigo} - {motoSelecionada?.modelo}</Text>
-            {motoSelecionada?.descricao && <Text style={[styles.modalSub, { color: tema.texto }]}>{motoSelecionada.descricao}</Text>}
-            <Text style={{ color: tema.texto }}>Status: {motoSelecionada?.status === 'patio' ? t.patio : motoSelecionada?.status === 'mecanica' ? t.mecanica : '📌 Pendente'}</Text>
-
-            {motoSelecionada?.status === 'pingar' && (
-              <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => pingarLocalizacao(motoSelecionada)}>
-                <Text style={styles.btnText}>{t.posicionar}</Text>
-              </TouchableOpacity>
-            )}
-            {motoSelecionada?.status === 'patio' && (
+            {!mostrarMapa ? (
               <>
-                <TouchableOpacity style={[styles.btnSecondary, { backgroundColor: tema.btnPrimary }]} onPress={() => pingarLocalizacao(motoSelecionada)}>
-                  <Text style={styles.btnText}>{t.trocarLocalizacao}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.btnDanger, { backgroundColor: tema.btnDanger }]} onPress={() => enviarParaMecanica(motoSelecionada)}>
-                  <Text style={styles.btnText}>{t.enviarMecanica}</Text>
+                <Text style={[styles.modalTitulo, { color: tema.texto }]}>{motoSelecionada?.placa || motoSelecionada?.codigo} - {motoSelecionada?.modelo}</Text>
+                {motoSelecionada?.descricao && <Text style={[styles.modalSub, { color: tema.texto }]}>{motoSelecionada.descricao}</Text>}
+                <Text style={{ color: tema.texto }}>Status: {motoSelecionada?.status === 'patio' ? t.patio : motoSelecionada?.status === 'mecanica' ? t.mecanica : '📌 Pendente'}</Text>
+
+                {motoSelecionada?.status === 'pingar' && (
+                  <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => pingarLocalizacao(motoSelecionada)}>
+                    <Text style={styles.btnText}>{t.posicionar}</Text>
+                  </TouchableOpacity>
+                )}
+                {motoSelecionada?.status === 'patio' && (
+                  <>
+                    <TouchableOpacity style={[styles.btnSecondary, { backgroundColor: tema.btnPrimary }]} onPress={() => pingarLocalizacao(motoSelecionada)}>
+                      <Text style={styles.btnText}>{t.trocarLocalizacao}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.btnDanger, { backgroundColor: tema.btnDanger }]} onPress={() => enviarParaMecanica(motoSelecionada)}>
+                      <Text style={styles.btnText}>{t.enviarMecanica}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => setMostrarMapa(true)}>
+                      <Text style={styles.btnText}>{t.localizar}</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {motoSelecionada?.status === 'mecanica' && (
+                  <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => retornarParaPatio(motoSelecionada)}>
+                    <Text style={styles.btnText}>{t.retornarPatio}</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity style={[styles.btnSecondary, { marginTop: 10, backgroundColor: tema.btnPrimary }]} onPress={() => setModalMoto(false)}>
+                  <Text style={styles.btnText}>{t.fechar}</Text>
                 </TouchableOpacity>
               </>
+            ) : (
+              <ScrollView contentContainerStyle={{alignItems:'center'}}>
+                <MapaPatio motoSelecionada={motoSelecionada.localizacao ? { ...motoSelecionada, ...motoSelecionada.localizacao } : motoSelecionada} />
+                <TouchableOpacity style={[styles.btnSecondary, { marginTop: 20, backgroundColor: tema.btnPrimary }]} onPress={() => setMostrarMapa(false)}>
+                  <Text style={styles.btnText}>⬅️ Voltar</Text>
+                </TouchableOpacity>
+              </ScrollView>
             )}
-            {motoSelecionada?.status === 'mecanica' && (
-              <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => retornarParaPatio(motoSelecionada)}>
-                <Text style={styles.btnText}>{t.retornarPatio}</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity style={[styles.btnSecondary, { marginTop: 10, backgroundColor: tema.btnPrimary }]} onPress={() => setModalMoto(false)}>
-              <Text style={styles.btnText}>{t.fechar}</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -205,7 +222,7 @@ const styles = StyleSheet.create({
   motoTitulo: {fontWeight: 'bold', fontSize: 15},
   motoSub: {fontSize: 13},
   modalContainer: {flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center'},
-  modalContent: {borderRadius: 16, padding: 20, width: '90%', maxWidth: 400},
+  modalContent: {borderRadius: 16, padding: 20, width: '90%', maxWidth: 400, maxHeight: '80%'},
   modalTitulo: {fontSize: 18, fontWeight: 'bold', marginBottom: 10},
   modalSub: {fontSize: 14, marginBottom: 10},
   btnPrimary: { padding: 12, borderRadius: 10, marginTop: 10},
