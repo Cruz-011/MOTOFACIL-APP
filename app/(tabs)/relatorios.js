@@ -1,10 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl
 } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -16,42 +17,39 @@ const mockRelatorio = {
     data: new Date().toLocaleDateString(),
     motosEntraram: 5,
     motosSairam: 3,
-    categoria: { azul: 2, verde: 1, vermelha: 2 },
     foraDoPatio: 1,
     emAtraso: 0,
     planoAquisicao: 2,
     planoAluguel: 3,
     motosPatio: [
-      { placa: 'ABC1234', cor: 'Azul', categoria: 'Aluguel' },
-      { placa: 'XYZ5678', cor: 'Verde', categoria: 'Aquisição' }
+      { placa: 'ABC1234', categoria: 'Aluguel' },
+      { placa: 'XYZ5678', categoria: 'Aquisição' }
     ]
   },
   '15 dias': {
     data: new Date().toLocaleDateString(),
     motosEntraram: 25,
     motosSairam: 20,
-    categoria: { azul: 8, verde: 9, vermelha: 8 },
     foraDoPatio: 3,
     emAtraso: 2,
     planoAquisicao: 10,
     planoAluguel: 15,
     motosPatio: [
-      { placa: 'QWE9876', cor: 'Vermelha', categoria: 'Aluguel' },
-      { placa: 'MNO4321', cor: 'Azul', categoria: 'Aluguel' }
+      { placa: 'QWE9876', categoria: 'Aluguel' },
+      { placa: 'MNO4321', categoria: 'Aluguel' }
     ]
   },
   '30 dias': {
     data: new Date().toLocaleDateString(),
     motosEntraram: 45,
     motosSairam: 38,
-    categoria: { azul: 15, verde: 14, vermelha: 16 },
     foraDoPatio: 5,
     emAtraso: 3,
     planoAquisicao: 18,
     planoAluguel: 27,
     motosPatio: [
-      { placa: 'DEF5555', cor: 'Verde', categoria: 'Aquisição' },
-      { placa: 'GHI7890', cor: 'Azul', categoria: 'Aluguel' }
+      { placa: 'DEF5555', categoria: 'Aquisição' },
+      { placa: 'GHI7890', categoria: 'Aluguel' }
     ]
   },
 };
@@ -63,6 +61,7 @@ export default function Relatorios() {
     : { fundo: '#f5f5f5', texto: '#000', card: '#fff', primary: '#3b82f6' };
 
   const [periodo, setPeriodo] = useState('hoje');
+  const [refreshing, setRefreshing] = useState(false);
   const relatorio = mockRelatorio[periodo];
 
   const t = {
@@ -85,23 +84,31 @@ export default function Relatorios() {
         <ul>
           <li>Entraram: ${relatorio.motosEntraram}</li>
           <li>Saíram: ${relatorio.motosSairam}</li>
-          <li>Azul: ${relatorio.categoria.azul}</li>
-          <li>Verde: ${relatorio.categoria.verde}</li>
-          <li>Vermelha: ${relatorio.categoria.vermelha}</li>
           <li>Fora do pátio: ${relatorio.foraDoPatio}</li>
           <li>Em atraso: ${relatorio.emAtraso}</li>
           <li>Plano aquisição: ${relatorio.planoAquisicao}</li>
           <li>Plano aluguel: ${relatorio.planoAluguel}</li>
         </ul>
         <h2>${t.motosPatio}</h2>
-        ${relatorio.motosPatio.map(m => `<p>Placa: ${m.placa} | Cor: ${m.cor} | Categoria: ${m.categoria}</p>`).join('')}
+        ${relatorio.motosPatio.map(m => `<p>Placa: ${m.placa} | Categoria: ${m.categoria}</p>`).join('')}
       </body></html>`;
     const { uri } = await Print.printToFileAsync({ html });
     await Sharing.shareAsync(uri);
   };
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800); // Simula atualização
+  }, []);
+
   return (
-    <ScrollView style={{ backgroundColor: tema.fundo }} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={{ backgroundColor: tema.fundo }}
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <Text style={[styles.header, { color: tema.primary }]}>{t.relatorio}</Text>
 
       <View style={styles.filtrosContainer}>
@@ -123,9 +130,6 @@ export default function Relatorios() {
         <Text style={[styles.subTitle, { color: tema.texto }]}>{t.resumo}</Text>
         <Text style={[styles.text, { color: tema.texto }]}>Entraram: {relatorio.motosEntraram}</Text>
         <Text style={[styles.text, { color: tema.texto }]}>Saíram: {relatorio.motosSairam}</Text>
-        <Text style={[styles.text, { color: tema.texto }]}>Azul: {relatorio.categoria.azul}</Text>
-        <Text style={[styles.text, { color: tema.texto }]}>Verde: {relatorio.categoria.verde}</Text>
-        <Text style={[styles.text, { color: tema.texto }]}>Vermelha: {relatorio.categoria.vermelha}</Text>
         <Text style={[styles.text, { color: tema.texto }]}>Fora do pátio: {relatorio.foraDoPatio}</Text>
         <Text style={[styles.text, { color: tema.texto }]}>Em atraso: {relatorio.emAtraso}</Text>
         <Text style={[styles.text, { color: tema.texto }]}>Plano aquisição: {relatorio.planoAquisicao}</Text>
@@ -135,7 +139,7 @@ export default function Relatorios() {
       <View style={[styles.card, { backgroundColor: tema.card }]}>
         <Text style={[styles.subTitle, { color: tema.texto }]}>{t.motosPatio}</Text>
         {relatorio.motosPatio.length > 0 ? relatorio.motosPatio.map((m, i) => (
-          <Text key={i} style={[styles.text, { color: tema.texto }]}>Placa: {m.placa} | Cor: {m.cor} | Categoria: {m.categoria}</Text>
+          <Text key={i} style={[styles.text, { color: tema.texto }]}>Placa: {m.placa} | Categoria: {m.categoria}</Text>
         )) : <Text style={[styles.text, { color: tema.texto }]}>{t.nenhum}</Text>}
       </View>
 

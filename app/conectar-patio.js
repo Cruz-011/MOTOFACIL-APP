@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TextInput,
   FlatList,
   Alert,
+  RefreshControl
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -33,12 +34,17 @@ export default function ConectarPatio() {
   const [dispositivos, setDispositivos] = useState([]);
   const [nome, setNome] = useState('');
   const [selecionado, setSelecionado] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const buscarESP32 = () => {
-    setDispositivos([
-      { id: 'esp32_1', nome: 'ESP32-Central-001' },
-      { id: 'esp32_2', nome: 'ESP32-Central-002' },
-    ]);
+    setRefreshing(true);
+    setTimeout(() => {
+      setDispositivos([
+        { id: 'esp32_1', nome: 'ESP32-Central-001' },
+        { id: 'esp32_2', nome: 'ESP32-Central-002' },
+      ]);
+      setRefreshing(false);
+    }, 800);
   };
 
   const cadastrarPatio = async () => {
@@ -92,6 +98,9 @@ export default function ConectarPatio() {
             </TouchableOpacity>
           )}
           style={{ marginVertical: 20 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={buscarESP32} />
+          }
         />
       )}
 

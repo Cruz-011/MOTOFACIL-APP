@@ -13,6 +13,7 @@ export default function Login() {
   const router = useRouter();
 
   const fazerLogin = async () => {
+    // Aqui você pode integrar com backend Java futuramente
     if (usuario === '' && senha === '') {
       await AsyncStorage.setItem('@usuario_logado', JSON.stringify({ usuario }));
       router.replace('/selecao-patio');

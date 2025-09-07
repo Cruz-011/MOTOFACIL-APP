@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'; 
+import React, { useState, useEffect, useContext, useCallback } from 'react'; 
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   FlatList,
   Modal,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CadastroMotoAvancado from '../../components/CadastroMotoAvancado';
@@ -30,13 +31,20 @@ export default function Motos() {
   const [busca, setBusca] = useState('');
   const [modalMoto, setModalMoto] = useState(false);
   const [mostrarMapa, setMostrarMapa] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const carregarMotos = async () => {
+    setRefreshing(true);
+    const salvas = await AsyncStorage.getItem('motos');
+    if (salvas) setMotos(JSON.parse(salvas));
+    setRefreshing(false);
+  };
 
   useEffect(() => { carregarMotos(); }, []);
 
-  const carregarMotos = async () => {
-    const salvas = await AsyncStorage.getItem('motos');
-    if (salvas) setMotos(JSON.parse(salvas));
-  };
+  const onRefresh = useCallback(() => {
+    carregarMotos();
+  }, []);
 
   const salvarMotos = async (lista) => {
     await AsyncStorage.setItem('motos', JSON.stringify(lista));
@@ -154,6 +162,9 @@ export default function Motos() {
         )}
         style={{flex: 1, width: '100%'}}
         contentContainerStyle={{paddingBottom: 120}}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       />
 
       {/* Modal da Moto */}

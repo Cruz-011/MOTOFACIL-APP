@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  RefreshControl,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -66,16 +67,23 @@ export default function SelecaoPatio() {
 
   const [patios, setPatios] = useState([]);
   const [patioSelecionado, setPatioSelecionado] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+
+  const carregarPatios = async () => {
+    setRefreshing(true);
+    const dados = await AsyncStorage.getItem("@lista_patios");
+    if (dados) setPatios(JSON.parse(dados));
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     carregarPatios();
   }, []);
 
-  const carregarPatios = async () => {
-    const dados = await AsyncStorage.getItem("@lista_patios");
-    if (dados) setPatios(JSON.parse(dados));
-  };
+  const onRefresh = useCallback(() => {
+    carregarPatios();
+  }, []);
 
   const selecionar = async (patio) => {
     await AsyncStorage.setItem("@patio_selecionado", JSON.stringify(patio));
@@ -173,6 +181,9 @@ export default function SelecaoPatio() {
         }
         contentContainerStyle={{ flexGrow: 0 }}
         style={{ maxHeight: 250, marginTop: 20 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       />
 
       {/* Mini mapa ampliado */}

@@ -52,6 +52,7 @@ export default function PatioConfig() {
   };
 
   const salvar = async () => {
+    // Aqui você pode integrar com backend Java futuramente
     if (!nomePatio.trim())
       return Alert.alert("Erro", "Digite o nome do pátio");
 

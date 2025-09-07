@@ -40,10 +40,10 @@ export default function CadastroMotoAvancado({ onRegistrarLocalizacao, onFechar,
     return true;
   };
 
-  const registrar = () => {
+  const registrar = async () => {
     if (!validar()) return;
 
-    // Se não tiver placa nem chassi, gera código único
+    // Aqui você pode integrar com backend Java futuramente
     const codigoFinal = placa || chassi ? codigo || '' : codigo || gerarCodigoAleatorio();
 
     onRegistrarLocalizacao?.({
