@@ -10,7 +10,8 @@ import {
   Alert,
   Image,
   Switch,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -26,14 +27,23 @@ const LANGUAGES = [
 ];
 
 const TEXTS = {
-  pt: { welcome: 'SEJA BEM-VINDO', user: 'Usuário', pass: 'Senha', enter: 'Entrar', error: 'Usuário ou senha incorretos' },
-  en: { welcome: 'WELCOME', user: 'User', pass: 'Password', enter: 'Login', error: 'Incorrect username or password' },
-  es: { welcome: 'BIENVENIDO', user: 'Usuario', pass: 'Contraseña', enter: 'Entrar', error: 'Usuario o contraseña incorrectos' },
+  pt: { welcome: 'SEJA BEM-VINDO', user: 'E-mail', pass: 'Senha', enter: 'Entrar', error: 'Usuário ou senha incorretos' },
+  en: { welcome: 'WELCOME', user: 'E-mai', pass: 'Password', enter: 'Login', error: 'Incorrect username or password' },
+  es: { welcome: 'BIENVENIDO', user: 'E-mai', pass: 'Contraseña', enter: 'Entrar', error: 'Usuario o contraseña incorrectos' },
 };
 
 function gerarCodigoAdm() {
   return 'ADM-' + Math.floor(Math.random() * 1000000);
 }
+
+// Valida email
+const validarEmail = (email) => /\S+@\S+\.\S+/.test(email);
+
+// Valida senha (mínimo 6 caracteres)
+const validarSenha = (senha) => senha.length >= 6;
+
+// Valida CNPJ (14 dígitos)
+const validarCNPJ = (cnpj) => /^\d{14}$/.test(cnpj);
 
 export default function Login() {
   const { temaEscuro, toggleTema, idioma, mudarIdioma } = useContext(ThemeContext);
@@ -52,6 +62,8 @@ export default function Login() {
     codigoFuncionario: ''
   });
   const [erroCadastro, setErroCadastro] = useState('');
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingCadastro, setLoadingCadastro] = useState(false);
 
   const currentTexts = TEXTS[idioma] || TEXTS['pt'];
 
@@ -66,6 +78,7 @@ export default function Login() {
       return;
     }
 
+    setLoadingLogin(true);
     try {
       const response = await fetch(`${BASE_URL}/auth/login`, {
         method: 'POST',
@@ -74,7 +87,7 @@ export default function Login() {
       });
 
       if (response.ok) {
-        const token = await response.text(); // JWT retornado como texto
+        const token = await response.text();
         await AsyncStorage.setItem('@usuario_logado', JSON.stringify({ token, usuario }));
         router.replace('/selecao-patio');
       } else {
@@ -83,6 +96,8 @@ export default function Login() {
     } catch (error) {
       console.log(error);
       Alert.alert('Erro', 'Não foi possível conectar ao servidor');
+    } finally {
+      setLoadingLogin(false);
     }
   };
 
@@ -95,21 +110,26 @@ export default function Login() {
       return;
     }
 
+    if (!validarEmail(cadastro.email)) {
+      setErroCadastro('Email inválido!');
+      return;
+    }
+
+    if (!validarSenha(cadastro.senha)) {
+      setErroCadastro('Senha deve ter no mínimo 6 caracteres!');
+      return;
+    }
+
+    if (tipoCadastro === 'admin' && !validarCNPJ(cadastro.cnpj)) {
+      setErroCadastro('CNPJ inválido! Deve ter 14 dígitos.');
+      return;
+    }
+
+    setLoadingCadastro(true);
     try {
       const body = tipoCadastro === 'admin'
-        ? {
-            nome: cadastro.nome,
-            email: cadastro.email,
-            senha: cadastro.senha,
-            cnpj: cadastro.cnpj,
-            codigoAdm: cadastro.codigoAdm
-          }
-        : {
-            nome: cadastro.nome,
-            email: cadastro.email,
-            senha: cadastro.senha,
-            codigoFuncionario: cadastro.codigoFuncionario
-          };
+        ? { nome: cadastro.nome, email: cadastro.email, senha: cadastro.senha, cnpj: cadastro.cnpj, codigoAdm: cadastro.codigoAdm }
+        : { nome: cadastro.nome, email: cadastro.email, senha: cadastro.senha, codigoFuncionario: cadastro.codigoFuncionario };
 
       const response = await fetch(`${BASE_URL}/auth/register/${tipoCadastro}`, {
         method: 'POST',
@@ -118,17 +138,10 @@ export default function Login() {
       });
 
       if (response.ok) {
-        const message = await response.text(); // backend retorna texto simples
+        const message = await response.text();
         Alert.alert('Sucesso', message);
         setShowCadastro(false);
-        setCadastro({
-          nome: '',
-          email: '',
-          senha: '',
-          cnpj: '',
-          codigoAdm: gerarCodigoAdm(),
-          codigoFuncionario: ''
-        });
+        setCadastro({ nome: '', email: '', senha: '', cnpj: '', codigoAdm: gerarCodigoAdm(), codigoFuncionario: '' });
       } else {
         const errorText = await response.text();
         setErroCadastro(errorText || 'Erro no cadastro');
@@ -136,24 +149,20 @@ export default function Login() {
     } catch (error) {
       console.log(error);
       setErroCadastro('Erro ao conectar com o servidor');
+    } finally {
+      setLoadingCadastro(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* Top Bar */}
       <View style={styles.topBar}>
         <Text style={{ fontSize: 22, marginRight: 8 }}>{temaEscuro ? '🌙' : '☀️'}</Text>
-        <Switch
-          value={temaEscuro}
-          onValueChange={toggleTema}
-          thumbColor={temaEscuro ? colors.primary : '#ccc'}
-          trackColor={{ false: '#ccc', true: colors.primary }}
-        />
+        <Switch value={temaEscuro} onValueChange={toggleTema} thumbColor={temaEscuro ? colors.primary : '#ccc'} trackColor={{ false: '#ccc', true: colors.primary }} />
       </View>
 
+      {/* Logo */}
       <View style={styles.logoContainer}>
         <View style={[styles.logoBg, { backgroundColor: theme.logoBg }]}>
           <Image source={require('../assets/images/motofacil.png')} style={styles.logo} resizeMode="contain" />
@@ -164,14 +173,14 @@ export default function Login() {
 
       {/* Inputs Login */}
       <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: colors.primary }]}
+        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: !usuario && loadingLogin ? 'red' : colors.primary }]}
         placeholder={currentTexts.user}
         placeholderTextColor={theme.placeholderText}
         value={usuario}
         onChangeText={setUsuario}
       />
       <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: colors.primary }]}
+        style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: !senha && loadingLogin ? 'red' : colors.primary }]}
         placeholder={currentTexts.pass}
         placeholderTextColor={theme.placeholderText}
         secureTextEntry
@@ -179,10 +188,15 @@ export default function Login() {
         onChangeText={setSenha}
       />
 
-      <TouchableOpacity style={[styles.botao, { backgroundColor: colors.primary }]} onPress={fazerLogin}>
-        <Text style={[styles.botaoTexto, { color: theme.buttonText }]}>{currentTexts.enter}</Text>
+      <TouchableOpacity
+        style={[styles.botao, { backgroundColor: colors.primary, opacity: loadingLogin ? 0.7 : 1 }]}
+        onPress={fazerLogin}
+        disabled={loadingLogin}
+      >
+        {loadingLogin ? <ActivityIndicator color="#fff" /> : <Text style={[styles.botaoTexto, { color: theme.buttonText }]}>{currentTexts.enter}</Text>}
       </TouchableOpacity>
 
+      {/* Idiomas */}
       <View style={styles.langContainer}>
         {LANGUAGES.map(lang => (
           <TouchableOpacity key={lang.code} style={styles.langItem} onPress={() => mudarIdioma(lang.code)}>
@@ -192,12 +206,14 @@ export default function Login() {
         ))}
       </View>
 
+      {/* Botão Cadastro */}
       <TouchableOpacity style={{ marginTop: 18 }} onPress={() => setShowCadastro(true)}>
         <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
           {idioma === 'pt' ? 'Cadastrar' : idioma === 'en' ? 'Register' : 'Registrar'}
         </Text>
       </TouchableOpacity>
 
+      {/* Modal Cadastro */}
       <Modal visible={showCadastro} transparent animationType="fade" onRequestClose={() => setShowCadastro(false)}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <View style={[styles.modal, { backgroundColor: theme.card, minWidth: 320 }]}>
@@ -205,7 +221,6 @@ export default function Login() {
               {idioma === 'pt' ? 'Cadastro de Usuário' : idioma === 'en' ? 'User Registration' : 'Registro de Usuario'}
             </Text>
 
-            {/* Tipo cadastro */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 10 }}>
               <TouchableOpacity onPress={() => setTipoCadastro('admin')} style={{ marginRight: 20 }}>
                 <Text style={{ color: tipoCadastro === 'admin' ? colors.primary : theme.text, fontWeight: 'bold' }}>
@@ -221,21 +236,21 @@ export default function Login() {
 
             {/* Inputs cadastro */}
             <TextInput
-              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: colors.primary }]}
+              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: erroCadastro && !cadastro.nome ? 'red' : colors.primary }]}
               placeholder="Nome"
               placeholderTextColor={theme.placeholderText}
               value={cadastro.nome}
               onChangeText={v => setCadastro({ ...cadastro, nome: v })}
             />
             <TextInput
-              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: colors.primary }]}
+              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: erroCadastro && !validarEmail(cadastro.email) ? 'red' : colors.primary }]}
               placeholder="Email"
               placeholderTextColor={theme.placeholderText}
               value={cadastro.email}
               onChangeText={v => setCadastro({ ...cadastro, email: v })}
             />
             <TextInput
-              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: colors.primary }]}
+              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: erroCadastro && !validarSenha(cadastro.senha) ? 'red' : colors.primary }]}
               placeholder={currentTexts.pass}
               placeholderTextColor={theme.placeholderText}
               secureTextEntry
@@ -246,7 +261,7 @@ export default function Login() {
             {tipoCadastro === 'admin' && (
               <>
                 <TextInput
-                  style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: colors.primary }]}
+                  style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: erroCadastro && !validarCNPJ(cadastro.cnpj) ? 'red' : colors.primary }]}
                   placeholder="CNPJ"
                   placeholderTextColor={theme.placeholderText}
                   value={cadastro.cnpj}
@@ -264,7 +279,7 @@ export default function Login() {
 
             {tipoCadastro === 'func' && (
               <TextInput
-                style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: colors.primary }]}
+                style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: erroCadastro && !cadastro.codigoFuncionario ? 'red' : colors.primary }]}
                 placeholder="Código de acesso ao pátio"
                 placeholderTextColor={theme.placeholderText}
                 value={cadastro.codigoFuncionario}
@@ -274,8 +289,12 @@ export default function Login() {
 
             {erroCadastro !== '' && <Text style={{ color: 'red', marginBottom: 8, textAlign: 'center' }}>{erroCadastro}</Text>}
 
-            <TouchableOpacity style={[styles.botao, { backgroundColor: colors.primary, marginTop: 8 }]} onPress={cadastrarUsuario}>
-              <Text style={[styles.botaoTexto, { color: theme.buttonText }]}>Cadastrar</Text>
+            <TouchableOpacity
+              style={[styles.botao, { backgroundColor: colors.primary, marginTop: 8, opacity: loadingCadastro ? 0.7 : 1 }]}
+              onPress={cadastrarUsuario}
+              disabled={loadingCadastro}
+            >
+              {loadingCadastro ? <ActivityIndicator color="#fff" /> : <Text style={[styles.botaoTexto, { color: theme.buttonText }]}>Cadastrar</Text>}
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.botao, { backgroundColor: '#888', marginTop: 8 }]} onPress={() => setShowCadastro(false)}>
