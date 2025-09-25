@@ -68,14 +68,32 @@ export default function Motos() {
   const carregarMotos = async () => {
     setRefreshing(true);
     try {
+      // Faz as duas requisições simultâneas
       const [respMotos, respPatios] = await Promise.all([api.get("/motos"), api.get("/patios")]);
-      setMotos(Array.isArray(respMotos.data) ? respMotos.data.map((m) => ({ ...m, localizacao: m.location || null })) : []);
-      setPatios(Array.isArray(respPatios.data) ? respPatios.data : []);
+
+      // Log para conferir os dados retornados
+      console.log("Resp Motos:", respMotos.data);
+      console.log("Resp Patios:", respPatios.data);
+
+      // Ajusta os patios
+      const patiosData = Array.isArray(respPatios.data) ? respPatios.data : [];
+      setPatios(patiosData);
+
+      // Ajusta as motos, mapeando localização corretamente
+      const motosData = Array.isArray(respMotos.data)
+        ? respMotos.data.map((m) => ({
+          ...m,
+          // localizacao pega coordenadas do pátio, se existir
+          localizacao: m.patio?.coordenadasExtremidade?.length > 0 ? m.patio.coordenadasExtremidade : null,
+        }))
+        : [];
+
+      setMotos(motosData);
+
     } catch (err) {
       console.log("Erro na API:", err.response?.status, err.response?.data || err.message);
       Alert.alert("Erro", "Não foi possível carregar motos ou pátios.");
-      setMotos([]);
-      setPatios([]);
+      // Não zere os dados, para não perder informações já carregadas
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -96,6 +114,11 @@ export default function Motos() {
       return;
     }
 
+    if (!patioSelecionado.esp32Central) {
+      Alert.alert("Pátio inválido", "O pátio selecionado precisa ter um esp32Central válido.");
+      return;
+    }
+
     const codigoFinal = codigo || gerarCodigoAleatorio();
 
     try {
@@ -106,17 +129,31 @@ export default function Motos() {
         categoria,
         codigo: codigoFinal,
         descricao: descricao || null,
-        patioId: patioSelecionado.id // ✅ garante que o backend sabe o pátio
+        patio: { id: patioSelecionado.id }, // <<< assim funciona com o backend atual
+        ativo: true,
       });
+
 
       setMotos((prev) => [...prev, { ...response.data, localizacao: null }]);
       Alert.alert("Sucesso", "Moto cadastrada com sucesso!");
-      setMostrarCadastro(false);
+
       // Reset campos
-      setPlaca(""); setChassi(""); setModelo(""); setCategoria(""); setCodigo(""); setDescricao(""); setPatioSelecionado(null);
+      setPlaca("");
+      setChassi("");
+      setModelo("");
+      setCategoria("");
+      setCodigo("");
+      setDescricao("");
+      setPatioSelecionado(null);
+      setMostrarCadastro(false);
+
     } catch (err) {
       console.log("Erro ao cadastrar moto:", err.response?.status, err.response?.data || err.message);
-      Alert.alert("Erro", "Não foi possível cadastrar a moto. Verifique permissões ou token.");
+      if (err.response?.data?.message) {
+        Alert.alert("Erro", err.response.data.message);
+      } else {
+        Alert.alert("Erro", "Não foi possível cadastrar a moto. Verifique o pátio e tente novamente.");
+      }
     }
   };
 
@@ -247,8 +284,6 @@ export default function Motos() {
     </View>
   );
 }
-
-// Styles continuam iguais
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, alignItems: "center", paddingTop: 50 },

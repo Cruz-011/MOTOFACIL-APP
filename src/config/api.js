@@ -1,8 +1,7 @@
-// src/config/api.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://192.168.0.119:8080/api';
+const BASE_URL = 'http://10.3.75.8:8080/api';
 
 // Cria instância do Axios
 const api = axios.create({
@@ -22,6 +21,7 @@ api.interceptors.request.use(
         const { token } = JSON.parse(usuario);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+          console.log('Token enviado no header:', token); // log para conferência
         }
       }
     } catch (err) {

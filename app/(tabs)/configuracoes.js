@@ -25,7 +25,7 @@ export default function Configuracoes() {
   const [novaSenha, setNovaSenha] = useState('');
 
   const router = useRouter();
-  const API = 'http://192.168.0.119:8080/api/user'; // backend
+  const API = 'http://10.3.75.8:8080/api/user'; // backend
 
   // --- Buscar usuário logado ---
   const buscarUsuarioLogado = async () => {

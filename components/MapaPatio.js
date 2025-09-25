@@ -5,7 +5,7 @@ import colors from '../src/theme/colors.js';
 
 const MAP_WIDTH = 300;
 const MAP_HEIGHT = 300;
-const API_URL = 'http://192.168.0.119:8080/api'; // substitua pelo IP real do backend
+const API_URL = 'http://10.3.75.8:8080/api'; // substitua pelo IP real do backend
 
 export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
   const [modalVisible, setModalVisible] = useState(false);

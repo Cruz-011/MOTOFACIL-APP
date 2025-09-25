@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { ThemeContext } from "../../src/context/ThemeContext";
 
-const API_URL = "http://192.168.0.119:8080/api/patios"; // Substitua pelo seu endpoint real
+const API_URL = "http://10.3.75.8:8080/api/patios"; // Substitua pelo seu endpoint real
 
 export default function PatioManager() {
   const { temaEscuro, idioma } = useContext(ThemeContext);

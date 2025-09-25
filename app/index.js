@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { ThemeContext } from '../src/context/ThemeContext.js';
 import colors from '../src/theme/colors.js';
 
-const BASE_URL = "http://192.168.0.119:8080/api";
+const BASE_URL = "http://10.3.75.8:8080/api";
 
 const LANGUAGES = [
   { code: 'pt', label: 'Português', emoji: '🇧🇷' },
