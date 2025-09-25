@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert } from 'react-native';
+import { 
+  View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Dimensions, Alert 
+} from 'react-native';
 import axios from 'axios';
 import colors from '../src/theme/colors.js';
 
-const MAP_WIDTH = 300;
-const MAP_HEIGHT = 300;
+const { width } = Dimensions.get('window');
+const MAP_WIDTH = width * 0.9; 
+const MAP_HEIGHT = MAP_WIDTH; 
+const ICON_SIZE = 30;
 const API_URL = 'http://10.3.75.8:8080/api'; // substitua pelo IP real do backend
 
 export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
@@ -30,20 +34,18 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
     }
   };
 
-  const x = motoAtual?.location?.x ?? 0;
-  const y = motoAtual?.location?.y ?? 0;
+  const getCoords = (coord, size) => (coord * size - ICON_SIZE / 2);
 
-  const left = x * MAP_WIDTH;
-  const top = y * MAP_HEIGHT;
+  const leftMoto = getCoords(motoAtual?.location?.x ?? 0, MAP_WIDTH);
+  const topMoto = getCoords(motoAtual?.location?.y ?? 0, MAP_HEIGHT);
+  const leftUser = getCoords(posicaoUsuario.x, MAP_WIDTH);
+  const topUser = getCoords(posicaoUsuario.y, MAP_HEIGHT);
 
-  const leftUser = posicaoUsuario.x * MAP_WIDTH;
-  const topUser = posicaoUsuario.y * MAP_HEIGHT;
+  const distancia = Math.sqrt(Math.pow(leftMoto - leftUser, 2) + Math.pow(topMoto - topUser, 2)) * 100;
 
-  const distancia = Math.sqrt(Math.pow(left - leftUser, 2) + Math.pow(top - topUser, 2)) * 100;
-
-  const renderMapa = () => (
-    <View style={styles.mapa}>
-      <View style={[styles.ponto, styles.moto, { left, top }]}>
+  const renderMapa = (mapWidth = MAP_WIDTH, mapHeight = MAP_HEIGHT) => (
+    <View style={[styles.mapa, { width: mapWidth, height: mapHeight }]}>
+      <View style={[styles.ponto, styles.moto, { left: leftMoto, top: topMoto }]}>
         <Text style={styles.icone}>🏍</Text>
       </View>
       <View style={[styles.ponto, styles.usuario, { left: leftUser, top: topUser }]}>
@@ -56,7 +58,9 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
     <View style={styles.wrapper}>
       <Text style={styles.titulo}>🗺️ Mapa do Pátio</Text>
 
-      {carregando ? <ActivityIndicator size="large" color={colors.primary} /> : renderMapa()}
+      {carregando ? (
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+      ) : renderMapa()}
 
       {motoAtual && (
         <View style={styles.card}>
@@ -91,7 +95,7 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitulo}>🧭 Mapa em Tela Cheia</Text>
-          {renderMapa()}
+          {renderMapa(width * 0.95, width * 0.95)}
           <TouchableOpacity style={styles.modalFecharBtn} onPress={() => setModalVisible(false)}>
             <Text style={styles.modalFecharText}>Fechar</Text>
           </TouchableOpacity>
@@ -105,18 +109,24 @@ const styles = StyleSheet.create({
   wrapper: { alignItems: 'center', gap: 16 },
   titulo: { fontSize: 20, fontWeight: '600', color: colors.primary, marginBottom: 8 },
   mapa: {
-    width: MAP_WIDTH,
-    height: MAP_HEIGHT,
     backgroundColor: '#f2f2f2',
     borderRadius: 12,
     borderColor: colors.primary,
     borderWidth: 1.5,
     position: 'relative',
   },
-  ponto: { position: 'absolute', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', zIndex: 2 },
-  moto: { backgroundColor: '#ff4d4d' },
-  usuario: { backgroundColor: '#4d94ff' },
-  icone: { fontSize: 16, color: '#fff' },
+  ponto: {
+    position: 'absolute',
+    width: ICON_SIZE,
+    height: ICON_SIZE,
+    borderRadius: ICON_SIZE / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  moto: { backgroundColor: '#ff4d4d', borderWidth: 2, borderColor: '#fff' },
+  usuario: { backgroundColor: '#4d94ff', borderWidth: 2, borderColor: '#fff' },
+  icone: { fontSize: 18, color: '#fff' },
   card: {
     backgroundColor: '#fff',
     padding: 14,
