@@ -14,15 +14,15 @@ import {
   RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import uuid from "react-native-uuid";
+import axios from "axios";
 import { ThemeContext } from "../../src/context/ThemeContext";
+
+const API_URL = "http://192.168.0.119:8080/api/patios"; // Substitua pelo seu endpoint real
 
 export default function PatioManager() {
   const { temaEscuro, idioma } = useContext(ThemeContext);
   const [aba, setAba] = useState("lista"); // "lista" ou "conectar"
 
-  // ----------- Tema e traduções -----------
   const tema = temaEscuro
     ? { fundo: "#111827", texto: "#fff", card: "#1f2937", primary: "#3b82f6", secundario: "#9ca3af", ipBg: "#222" }
     : { fundo: "#f9fafb", texto: "#111827", card: "#fff", primary: "#2563eb", secundario: "#6b7280", ipBg: "#e9e9e9" };
@@ -31,38 +31,41 @@ export default function PatioManager() {
     selecionarPatio: idioma === "pt" ? "Selecione um Pátio" : idioma === "es" ? "Seleccione un Patio" : "Select a Yard",
     nenhumPatio: idioma === "pt" ? "Nenhum pátio cadastrado." : idioma === "es" ? "Ningún patio registrado." : "No yard registered.",
     conectarNovo: idioma === "pt" ? "Conectar Novo Pátio" : idioma === "es" ? "Conectar Nuevo Patio" : "Connect New Yard",
-    miniMapa: idioma === "pt" ? "Mapa do Pátio" : idioma === "es" ? "Mapa del Patio" : "Yard Map",
-    miniMapaPlaceholder: idioma === "pt" ? "Visualização do pátio aqui..." : idioma === "es" ? "Vista del patio aquí..." : "Yard preview here...",
-    conectarESP32: idioma === "pt" ? "Conectar ao ESP32 por IP" : idioma === "es" ? "Conectar al ESP32 por IP" : "Connect to ESP32 by IP",
-    ip: idioma === "pt" ? "Endereço IP do ESP32" : idioma === "es" ? "Dirección IP del ESP32" : "ESP32 IP Address",
+    conectarESP32: idioma === "pt" ? "Cadastrar Novo Pátio" : idioma === "es" ? "Registrar Nuevo Patio" : "Register New Yard",
     nomePatio: idioma === "pt" ? "Nome do Pátio" : idioma === "es" ? "Nombre del Patio" : "Yard Name",
-    conectar: idioma === "pt" ? "Conectar" : idioma === "es" ? "Conectar" : "Connect",
+    enderecoPatio: idioma === "pt" ? "Endereço" : idioma === "es" ? "Dirección" : "Address",
+    codigoUnico: idioma === "pt" ? "Código Único" : idioma === "es" ? "Código Único" : "Unique Code",
+    esp32: idioma === "pt" ? "ESP32 Central" : idioma === "es" ? "ESP32 Central" : "ESP32 Central",
     cadastrar: idioma === "pt" ? "Cadastrar Pátio" : idioma === "es" ? "Registrar Patio" : "Register Yard",
     conectando: idioma === "pt" ? "Conectando..." : idioma === "es" ? "Conectando..." : "Connecting...",
-    sucesso: idioma === "pt" ? "Conectado com sucesso!" : idioma === "es" ? "¡Conectado exitosamente!" : "Connected successfully!",
-    erro: idioma === "pt" ? "Falha ao conectar. Verifique o IP." : idioma === "es" ? "Error al conectar." : "Failed to connect.",
-    informeCampos: idioma === "pt" ? "Informe o nome e o IP." : idioma === "es" ? "Ingrese el nombre y la IP." : "Enter name and IP.",
-    buscarRede: idioma === "pt" ? "Buscar ESP32 na rede" : idioma === "es" ? "Buscar ESP32 en la red" : "Scan ESP32 on network",
+    sucesso: idioma === "pt" ? "Cadastrado com sucesso!" : idioma === "es" ? "¡Registrado exitosamente!" : "Registered successfully!",
+    erro: idioma === "pt" ? "Erro ao cadastrar." : idioma === "es" ? "Error al registrar." : "Failed to register.",
+    informeCampos: idioma === "pt" ? "Informe todos os campos." : idioma === "es" ? "Ingrese todos los campos." : "Fill all fields.",
   };
 
-  // ----------- Estados -----------
   const [patios, setPatios] = useState([]);
   const [patioSelecionado, setPatioSelecionado] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const [nome, setNome] = useState("");
-  const [ip, setIp] = useState("");
-  const [conectando, setConectando] = useState(false);
-  const [conectado, setConectado] = useState(false);
-  const [ipsEncontrados, setIpsEncontrados] = useState([]);
-  const [buscando, setBuscando] = useState(false);
+  const [endereco, setEndereco] = useState("");
+  const [codigoUnico, setCodigoUnico] = useState("");
+  const [esp32Central, setEsp32Central] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // ----------- Funções -----------
+
   const carregarPatios = async () => {
-    setRefreshing(true);
-    const dados = await AsyncStorage.getItem("@lista_patios");
-    if (dados) setPatios(JSON.parse(dados));
-    setRefreshing(false);
+    try {
+      setRefreshing(true);
+      const response = await axios.get(API_URL);
+      setPatios(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar pátios:", error);
+      Alert.alert("Erro", "Não foi possível carregar os pátios.");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -73,23 +76,23 @@ export default function PatioManager() {
     carregarPatios();
   }, []);
 
-  const selecionar = async (patio) => {
-    await AsyncStorage.setItem("@patio_selecionado", JSON.stringify(patio));
+  const selecionar = (patio) => {
     setPatioSelecionado(patio);
   };
 
-  const deletar = (id) => {
+  const deletar = async (id) => {
     Alert.alert("Excluir", "Tem certeza que deseja excluir este pátio?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Excluir",
         onPress: async () => {
-          const novos = patios.filter((p) => p.id !== id);
-          setPatios(novos);
-          await AsyncStorage.setItem("@lista_patios", JSON.stringify(novos));
-          if (patioSelecionado?.id === id) {
-            setPatioSelecionado(null);
-            await AsyncStorage.removeItem("@patio_selecionado");
+          try {
+            await axios.delete(`${API_URL}/${id}`);
+            carregarPatios();
+            if (patioSelecionado?.id === id) setPatioSelecionado(null);
+          } catch (error) {
+            console.error("Erro ao deletar:", error);
+            Alert.alert("Erro", "Não foi possível excluir o pátio.");
           }
         },
         style: "destructive",
@@ -97,51 +100,34 @@ export default function PatioManager() {
     ]);
   };
 
-  const conectarPorIp = async () => {
-    if (!nome || !ip) {
-      Alert.alert("Atenção", t.informeCampos);
-      return;
-    }
-    setConectando(true);
-    setTimeout(() => {
-      setConectando(false);
-      setConectado(true);
-      Alert.alert(t.sucesso);
-    }, 1200);
-  };
-
   const cadastrarPatio = async () => {
-    if (!nome || !ip || !conectado) {
+    if (!nome || !endereco || !codigoUnico || !esp32Central) {
       Alert.alert("Atenção", t.informeCampos);
       return;
     }
-    const novoPatio = { id: uuid.v4(), nome, ip, criadoEm: new Date().toISOString() };
-    const dados = await AsyncStorage.getItem("@lista_patios");
-    const lista = dados ? JSON.parse(dados) : [];
-    lista.push(novoPatio);
-    await AsyncStorage.setItem("@lista_patios", JSON.stringify(lista));
-    await AsyncStorage.setItem("@patio_selecionado", JSON.stringify(novoPatio));
-    setPatios(lista);
-    setAba("lista");
-    setNome("");
-    setIp("");
-    setConectado(false);
-  };
 
-  const buscarIpsNaRede = async () => {
-    setBuscando(true);
-    setIpsEncontrados([]);
-    setTimeout(() => {
-      setIpsEncontrados([
-        { ip: "192.168.0.101", nome: "ESP32-101" },
-        { ip: "192.168.0.102", nome: "ESP32-102" },
-        { ip: "192.168.0.103", nome: "ESP32-103" },
-      ]);
-      setBuscando(false);
-    }, 1500);
+    setLoading(true);
+    try {
+      await axios.post(API_URL, {
+        nome,
+        endereco,
+        codigoUnico,
+        esp32Central,
+      });
+      Alert.alert(t.sucesso);
+      setNome(""); setEndereco(""); setCodigoUnico(""); setEsp32Central("");
+      setAba("lista");
+      carregarPatios();
+    } catch (error) {
+      console.error("Erro ao cadastrar:", error);
+      Alert.alert("Erro", t.erro);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ----------- Render -----------
+
   const renderLista = () => (
     <View>
       <Text style={[styles.title, { color: tema.primary }]}>{t.selecionarPatio}</Text>
@@ -158,10 +144,7 @@ export default function PatioManager() {
           const isSelected = patioSelecionado?.id === item.id;
           return (
             <TouchableOpacity
-              style={[
-                styles.card,
-                { backgroundColor: tema.card, borderColor: isSelected ? tema.primary : tema.secundario },
-              ]}
+              style={[styles.card, { backgroundColor: tema.card, borderColor: isSelected ? tema.primary : tema.secundario }]}
               onPress={() => selecionar(item)}
               activeOpacity={0.8}
             >
@@ -187,10 +170,10 @@ export default function PatioManager() {
 
       {patioSelecionado && (
         <View style={[styles.miniMapa, { backgroundColor: tema.card, borderColor: tema.primary }]}>
-          <Text style={[styles.miniMapaTitle, { color: tema.primary }]}>{t.miniMapa}: {patioSelecionado.nome}</Text>
+          <Text style={[styles.miniMapaTitle, { color: tema.primary }]}>{patioSelecionado.nome}</Text>
           <View style={styles.mapaPlaceholder}>
             <Ionicons name="map-outline" size={70} color={tema.secundario} />
-            <Text style={{ color: tema.secundario, marginTop: 10 }}>{t.miniMapaPlaceholder}</Text>
+            <Text style={{ color: tema.secundario, marginTop: 10 }}>Visualização do pátio</Text>
           </View>
         </View>
       )}
@@ -202,30 +185,6 @@ export default function PatioManager() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <Text style={[styles.title, { color: tema.primary }]}>{t.conectarESP32}</Text>
 
-        <TouchableOpacity style={[styles.buscarBtn, { backgroundColor: tema.primary }]} onPress={buscarIpsNaRede}>
-          {buscando ? <ActivityIndicator color={tema.texto} /> : <Text style={{ color: tema.texto }}>{t.buscarRede}</Text>}
-        </TouchableOpacity>
-
-        {ipsEncontrados.map((item) => (
-          <TouchableOpacity
-            key={item.ip}
-            style={[styles.ipItem, { backgroundColor: tema.ipBg }, ip === item.ip && { borderColor: tema.primary, borderWidth: 2 }]}
-            onPress={() => setIp(item.ip)}
-          >
-            <Text style={{ color: tema.texto, fontWeight: "bold" }}>{item.nome}</Text>
-            <Text style={{ color: tema.texto }}>{item.ip}</Text>
-          </TouchableOpacity>
-        ))}
-
-        <TextInput
-          placeholder={t.ip}
-          value={ip}
-          onChangeText={setIp}
-          style={[styles.input, { borderColor: tema.secundario, color: tema.texto, backgroundColor: tema.card }]}
-          placeholderTextColor={tema.secundario}
-          keyboardType="numeric"
-        />
-
         <TextInput
           placeholder={t.nomePatio}
           value={nome}
@@ -233,16 +192,31 @@ export default function PatioManager() {
           style={[styles.input, { borderColor: tema.secundario, color: tema.texto, backgroundColor: tema.card }]}
           placeholderTextColor={tema.secundario}
         />
+        <TextInput
+          placeholder={t.enderecoPatio}
+          value={endereco}
+          onChangeText={setEndereco}
+          style={[styles.input, { borderColor: tema.secundario, color: tema.texto, backgroundColor: tema.card }]}
+          placeholderTextColor={tema.secundario}
+        />
+        <TextInput
+          placeholder={t.codigoUnico}
+          value={codigoUnico}
+          onChangeText={setCodigoUnico}
+          style={[styles.input, { borderColor: tema.secundario, color: tema.texto, backgroundColor: tema.card }]}
+          placeholderTextColor={tema.secundario}
+        />
+        <TextInput
+          placeholder={t.esp32}
+          value={esp32Central}
+          onChangeText={setEsp32Central}
+          style={[styles.input, { borderColor: tema.secundario, color: tema.texto, backgroundColor: tema.card }]}
+          placeholderTextColor={tema.secundario}
+        />
 
-        <TouchableOpacity style={[styles.botao, { backgroundColor: tema.primary }]} onPress={conectarPorIp}>
-          {conectando ? <ActivityIndicator color={tema.texto} /> : <Text style={[styles.botaoTexto, { color: tema.texto }]}>{t.conectar}</Text>}
+        <TouchableOpacity style={[styles.botao, { backgroundColor: tema.primary }]} onPress={cadastrarPatio}>
+          {loading ? <ActivityIndicator color={tema.texto} /> : <Text style={[styles.botaoTexto, { color: tema.texto }]}>{t.cadastrar}</Text>}
         </TouchableOpacity>
-
-        {conectado && (
-          <TouchableOpacity style={[styles.botao, { backgroundColor: tema.primary, marginTop: 10 }]} onPress={cadastrarPatio}>
-            <Text style={[styles.botaoTexto, { color: tema.texto }]}>{t.cadastrar}</Text>
-          </TouchableOpacity>
-        )}
 
         <TouchableOpacity style={[styles.botaoCancelar, { backgroundColor: tema.secundario }]} onPress={() => setAba("lista")}>
           <Text style={styles.botaoCancelarTexto}>Voltar</Text>
@@ -254,7 +228,6 @@ export default function PatioManager() {
   return <View style={[styles.container, { backgroundColor: tema.fundo }]}>{aba === "lista" ? renderLista() : renderConectar()}</View>;
 }
 
-// ----------- Styles -----------
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingTop: 60 },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 15, textAlign: "center" },
@@ -265,10 +238,8 @@ const styles = StyleSheet.create({
   botaoTexto: { fontWeight: "600", fontSize: 16 },
   miniMapa: { flex: 1, marginTop: 25, padding: 18, borderRadius: 12, borderWidth: 1.5 },
   miniMapaTitle: { fontWeight: "700", fontSize: 18, marginBottom: 12 },
-  mapaPlaceholder: { flex: 1, minHeight: 250, backgroundColor: "#e5e7eb", borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  mapaPlaceholder: { flex: 1, minHeight: 250, borderRadius: 10, justifyContent: "center", alignItems: "center" },
   input: { marginTop: 15, borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16 },
-  buscarBtn: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 8, justifyContent: "center", marginBottom: 10 },
-  ipItem: { padding: 10, borderRadius: 8, marginBottom: 8, borderWidth: 1 },
   botaoCancelar: { marginTop: 18, padding: 12, borderRadius: 8, alignItems: "center" },
   botaoCancelarTexto: { color: "#fff", fontWeight: "bold", fontSize: 15 },
 });

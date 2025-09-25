@@ -1,10 +1,10 @@
+// src/screens/Motos.js
 import React, { useState, useEffect, useContext, useCallback } from "react";
 import {
   View,
-  StyleSheet,
-  TouchableOpacity,
   Text,
   TextInput,
+  TouchableOpacity,
   FlatList,
   Modal,
   ScrollView,
@@ -13,6 +13,7 @@ import {
   Alert,
   Platform,
   UIManager,
+  StyleSheet,
 } from "react-native";
 import { ThemeContext } from "../../src/context/ThemeContext";
 import MapaPatio from "../../components/MapaPatio";
@@ -34,8 +35,8 @@ function gerarCodigoAleatorio() {
 
 export default function Motos() {
   const { temaEscuro, idioma } = useContext(ThemeContext);
-
   const [motos, setMotos] = useState([]);
+  const [patios, setPatios] = useState([]);
   const [motoSelecionada, setMotoSelecionada] = useState(null);
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
   const [busca, setBusca] = useState("");
@@ -44,15 +45,14 @@ export default function Motos() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Campos do cadastro
   const [placa, setPlaca] = useState("");
   const [chassi, setChassi] = useState("");
   const [modelo, setModelo] = useState("");
   const [categoria, setCategoria] = useState("");
   const [codigo, setCodigo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [patioSelecionado, setPatioSelecionado] = useState(null);
 
-  // Tema
   const tema = temaEscuro
     ? { fundo: "#1f2937", texto: "#fff", card: "#374151", border: "#2563eb", btnPrimary: "#3b82f6", btnDanger: "#ef4444", secundario: "#9ca3af" }
     : { fundo: "#f5f5f5", texto: "#000", card: "#fff", border: "#3b82f6", btnPrimary: "#3b82f6", btnDanger: "#ef4444", secundario: "#6b7280" };
@@ -65,27 +65,17 @@ export default function Motos() {
     fechar: idioma === "pt" ? "✖️ Fechar" : idioma === "es" ? "✖️ Cerrar" : "✖️ Close",
   };
 
-  // Carregar motos
   const carregarMotos = async () => {
     setRefreshing(true);
     try {
-      const response = await api.get("/motos");
-      const lista = response.data;
-
-      const listaComLocalizacao = await Promise.all(
-        lista.map(async (m) => {
-          try {
-            const loc = await api.get(`/location/moto/${m.id}/latest`);
-            return { ...m, localizacao: loc.data };
-          } catch {
-            return { ...m, localizacao: null };
-          }
-        })
-      );
-
-      setMotos(listaComLocalizacao);
+      const [respMotos, respPatios] = await Promise.all([api.get("/motos"), api.get("/patios")]);
+      setMotos(Array.isArray(respMotos.data) ? respMotos.data.map((m) => ({ ...m, localizacao: m.location || null })) : []);
+      setPatios(Array.isArray(respPatios.data) ? respPatios.data : []);
     } catch (err) {
-      console.error("Erro ao carregar motos:", err);
+      console.log("Erro na API:", err.response?.status, err.response?.data || err.message);
+      Alert.alert("Erro", "Não foi possível carregar motos ou pátios.");
+      setMotos([]);
+      setPatios([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -100,20 +90,13 @@ export default function Motos() {
     carregarMotos();
   }, []);
 
-  // Criar moto
   const registrar = async () => {
-    if (!modelo || !categoria) {
-      Alert.alert("Campos obrigatórios", "Modelo e Categoria são obrigatórios.");
+    if (!modelo || !categoria || !patioSelecionado) {
+      Alert.alert("Campos obrigatórios", "Modelo, Categoria e Pátio são obrigatórios.");
       return;
     }
-    if (!placa && !chassi && !codigo) {
-      Alert.alert(
-        "Identificação necessária",
-        "A moto não possui placa ou chassi. Será gerado um código único automaticamente."
-      );
-    }
 
-    const codigoFinal = placa || chassi ? codigo || "" : codigo || gerarCodigoAleatorio();
+    const codigoFinal = codigo || gerarCodigoAleatorio();
 
     try {
       const response = await api.post("/motos", {
@@ -122,37 +105,29 @@ export default function Motos() {
         modelo,
         categoria,
         codigo: codigoFinal,
-        descricao,
-        x: 0.5,
-        y: 0.6,
+        descricao: descricao || null,
+        patioId: patioSelecionado.id // ✅ garante que o backend sabe o pátio
       });
-      setMotos((prev) => [...prev, response.data]);
+
+      setMotos((prev) => [...prev, { ...response.data, localizacao: null }]);
       Alert.alert("Sucesso", "Moto cadastrada com sucesso!");
       setMostrarCadastro(false);
-      setPlaca("");
-      setChassi("");
-      setModelo("");
-      setCategoria("");
-      setCodigo("");
-      setDescricao("");
+      // Reset campos
+      setPlaca(""); setChassi(""); setModelo(""); setCategoria(""); setCodigo(""); setDescricao(""); setPatioSelecionado(null);
     } catch (err) {
-      console.error("Erro ao cadastrar moto:", err);
+      console.log("Erro ao cadastrar moto:", err.response?.status, err.response?.data || err.message);
+      Alert.alert("Erro", "Não foi possível cadastrar a moto. Verifique permissões ou token.");
     }
   };
 
-  // Atualizar localização fake
-  const pingarLocalizacao = async (moto) => {
+  const atualizarLocalizacao = async (moto, x, y) => {
     try {
-      const dto = {
-        x: -23.653 + Math.random() * 0.01,
-        y: -46.532 + Math.random() * 0.01,
-        motoId: moto.id,
-      };
-      const response = await api.put(`/motos/${moto.id}/location`, dto);
+      const response = await api.put(`/motos/${moto.id}/location`, { x, y });
       carregarMotos();
       setMotoSelecionada(response.data);
     } catch (err) {
-      console.error("Erro ao atualizar localização:", err);
+      console.log("Erro ao atualizar localização:", err.response?.status, err.response?.data || err.message);
+      Alert.alert("Erro", "Não foi possível atualizar a localização.");
     }
   };
 
@@ -165,14 +140,13 @@ export default function Motos() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color={tema.btnPrimary} />
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: tema.fundo }]}>
-      {/* Botão abrir cadastro */}
       <TouchableOpacity
         style={[styles.btnCadastroTopo, { backgroundColor: tema.btnPrimary, borderColor: tema.border }]}
         onPress={() => setMostrarCadastro(!mostrarCadastro)}
@@ -180,40 +154,17 @@ export default function Motos() {
         <Text style={styles.btnText}>{mostrarCadastro ? t.cancelar : t.cadastrar}</Text>
       </TouchableOpacity>
 
-      {/* Cadastro Moto */}
       {mostrarCadastro && (
         <ScrollView style={[styles.cardCadastro, { backgroundColor: tema.card }]}>
           <Text style={[styles.titulo, { color: tema.btnPrimary }]}>📋 Cadastrar Nova Moto</Text>
 
-          <TextInput
-            style={[styles.input, { backgroundColor: tema.card, color: tema.texto, borderColor: tema.btnPrimary }]}
-            placeholder="Placa"
-            placeholderTextColor={tema.secundario}
-            value={placa}
-            onChangeText={setPlaca}
-          />
-          <TextInput
-            style={[styles.input, { backgroundColor: tema.card, color: tema.texto, borderColor: tema.btnPrimary }]}
-            placeholder="Chassi"
-            placeholderTextColor={tema.secundario}
-            value={chassi}
-            onChangeText={setChassi}
-          />
-          <TextInput
-            style={[styles.input, { backgroundColor: tema.card, color: tema.texto, borderColor: tema.btnPrimary }]}
-            placeholder="Código (opcional)"
-            placeholderTextColor={tema.secundario}
-            value={codigo}
-            onChangeText={setCodigo}
-          />
+          <TextInput style={[styles.input, { borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Placa" placeholderTextColor={tema.secundario} value={placa} onChangeText={setPlaca} />
+          <TextInput style={[styles.input, { borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Chassi" placeholderTextColor={tema.secundario} value={chassi} onChangeText={setChassi} />
+          <TextInput style={[styles.input, { borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Código (opcional)" placeholderTextColor={tema.secundario} value={codigo} onChangeText={setCodigo} />
 
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Modelo</Text>
           {modelosDisponiveis.map((m) => (
-            <TouchableOpacity
-              key={m.nome}
-              style={[styles.btnOpcao, { borderColor: modelo === m.nome ? tema.btnPrimary : tema.secundario, backgroundColor: modelo === m.nome ? `${tema.btnPrimary}33` : tema.card }]}
-              onPress={() => setModelo(m.nome)}
-            >
+            <TouchableOpacity key={m.nome} style={[styles.btnOpcao, { borderColor: modelo === m.nome ? tema.btnPrimary : tema.secundario }]} onPress={() => setModelo(m.nome)}>
               <Text style={[styles.opcaoTitulo, { color: tema.texto }]}>{m.nome}</Text>
             </TouchableOpacity>
           ))}
@@ -221,56 +172,38 @@ export default function Motos() {
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Categoria</Text>
           <View style={styles.categorias}>
             {["aluguel", "aquisição"].map((tipo) => (
-              <TouchableOpacity
-                key={tipo}
-                style={[styles.categoriaBtn, { borderColor: categoria === tipo ? tema.btnPrimary : tema.secundario, backgroundColor: categoria === tipo ? `${tema.btnPrimary}33` : tema.card }]}
-                onPress={() => setCategoria(tipo)}
-              >
+              <TouchableOpacity key={tipo} style={[styles.categoriaBtn, { borderColor: categoria === tipo ? tema.btnPrimary : tema.secundario }]} onPress={() => setCategoria(tipo)}>
                 <Text style={[styles.categoriaText, { color: tema.texto }]}>{tipo.toUpperCase()}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
+          <Text style={[styles.label, { color: tema.btnPrimary }]}>Pátio</Text>
+          <View style={styles.categorias}>
+            {patios.map((p) => (
+              <TouchableOpacity key={p.id} style={[styles.categoriaBtn, { borderColor: patioSelecionado?.id === p.id ? tema.btnPrimary : tema.secundario }]} onPress={() => setPatioSelecionado(p)}>
+                <Text style={[styles.categoriaText, { color: tema.texto }]}>{p.nome}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Descrição</Text>
-          <TextInput
-            style={[styles.input, { minHeight: 60, backgroundColor: tema.card, color: tema.texto, borderColor: tema.btnPrimary }]}
-            placeholder="Descrição (opcional)"
-            placeholderTextColor={tema.secundario}
-            value={descricao}
-            onChangeText={setDescricao}
-            multiline
-          />
+          <TextInput style={[styles.input, { minHeight: 60, borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Descrição (opcional)" placeholderTextColor={tema.secundario} value={descricao} onChangeText={setDescricao} multiline />
 
           <TouchableOpacity style={[styles.btnSalvar, { backgroundColor: tema.btnPrimary }]} onPress={registrar}>
-            <Text style={styles.btnText}>📍 Registrar Localização</Text>
+            <Text style={styles.btnText}>📍 Registrar</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
 
-      {/* Barra de busca */}
-      <TextInput
-        style={[styles.searchInput, { backgroundColor: tema.card, color: tema.texto, borderColor: tema.border }]}
-        placeholder={t.pesquisar}
-        placeholderTextColor={temaEscuro ? "#9ca3af" : "#6b7280"}
-        value={busca}
-        onChangeText={setBusca}
-      />
+      <TextInput style={[styles.searchInput, { borderColor: tema.border, color: tema.texto }]} placeholder={t.pesquisar} placeholderTextColor={tema.secundario} value={busca} onChangeText={setBusca} />
 
-      {/* Lista de motos */}
       <FlatList
-        data={motos.filter(
-          (m) =>
-            m.placa?.toLowerCase().includes(busca.toLowerCase()) ||
-            m.modelo?.toLowerCase().includes(busca.toLowerCase()) ||
-            m.codigo?.toLowerCase().includes(busca.toLowerCase())
-        )}
+        data={motos.filter((m) => (m.placa || m.codigo || m.modelo)?.toLowerCase().includes(busca.toLowerCase()))}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.motoItem, { backgroundColor: tema.card, borderLeftColor: item.localizacao ? "#10b981" : "#f59e0b" }]}
-            onPress={() => abrirModal(item)}
-          >
-            <Text style={[styles.motoTitulo, { color: tema.texto }]}>{item.placa || item.codigo} - {item.modelo}</Text>
+          <TouchableOpacity style={[styles.motoItem, { borderLeftColor: item.localizacao ? "#10b981" : "#f59e0b" }]} onPress={() => abrirModal(item)}>
+            <Text style={[styles.motoTitulo, { color: tema.texto }]}>{item.placa || item.codigo} - {item.modelo} ({item.patio?.nome || "Sem Pátio"})</Text>
           </TouchableOpacity>
         )}
         style={{ flex: 1, width: "100%" }}
@@ -278,7 +211,6 @@ export default function Motos() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
 
-      {/* Modal Moto */}
       <Modal visible={modalMoto} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: tema.card }]}>
@@ -287,36 +219,24 @@ export default function Motos() {
                 <Text style={[styles.modalTitulo, { color: tema.texto }]}>{motoSelecionada?.placa || motoSelecionada?.codigo} - {motoSelecionada?.modelo}</Text>
                 <Text style={{ color: tema.texto }}>Status: {motoSelecionada?.localizacao ? "🏍️ Pátio" : "📌 Pendente"}</Text>
 
-                <TouchableOpacity
-                  style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]}
-                  onPress={() => pingarLocalizacao(motoSelecionada)}
-                >
+                <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => atualizarLocalizacao(motoSelecionada, Math.random(), Math.random())}>
                   <Text style={styles.btnText}>📌 Atualizar Localização</Text>
                 </TouchableOpacity>
 
                 {motoSelecionada?.localizacao && (
-                  <TouchableOpacity
-                    style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]}
-                    onPress={() => setMostrarMapa(true)}
-                  >
+                  <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => setMostrarMapa(true)}>
                     <Text style={styles.btnText}>{t.localizar}</Text>
                   </TouchableOpacity>
                 )}
 
-                <TouchableOpacity
-                  style={[styles.btnSecondary, { marginTop: 10, backgroundColor: tema.btnPrimary }]}
-                  onPress={() => setModalMoto(false)}
-                >
+                <TouchableOpacity style={[styles.btnSecondary, { marginTop: 10, backgroundColor: tema.btnPrimary }]} onPress={() => setModalMoto(false)}>
                   <Text style={styles.btnText}>{t.fechar}</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <ScrollView contentContainerStyle={{ alignItems: "center" }}>
-                <MapaPatio motoSelecionada={motoSelecionada} />
-                <TouchableOpacity
-                  style={[styles.btnSecondary, { marginTop: 20, backgroundColor: tema.btnPrimary }]}
-                  onPress={() => setMostrarMapa(false)}
-                >
+                <MapaPatio motos={[motoSelecionada]} />
+                <TouchableOpacity style={[styles.btnSecondary, { marginTop: 20, backgroundColor: tema.btnPrimary }]} onPress={() => setMostrarMapa(false)}>
                   <Text style={styles.btnText}>⬅️ Voltar</Text>
                 </TouchableOpacity>
               </ScrollView>
@@ -327,6 +247,8 @@ export default function Motos() {
     </View>
   );
 }
+
+// Styles continuam iguais
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, alignItems: "center", paddingTop: 50 },
@@ -348,7 +270,7 @@ const styles = StyleSheet.create({
   btnOpcao: { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 8 },
   opcaoTitulo: { fontSize: 15, textAlign: "center", fontWeight: "bold" },
   btnSalvar: { padding: 16, borderRadius: 10, marginBottom: 10, alignItems: "center" },
-  categorias: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  categoriaBtn: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 1, alignItems: "center" },
+  categorias: { flexDirection: "row", gap: 10, marginBottom: 16, flexWrap: "wrap" },
+  categoriaBtn: { padding: 10, borderWidth: 1, borderRadius: 10 },
   categoriaText: { fontWeight: "bold" },
 });

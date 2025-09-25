@@ -1,17 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert } from 'react-native';
+import axios from 'axios';
 import colors from '../src/theme/colors.js';
 
 const MAP_WIDTH = 300;
 const MAP_HEIGHT = 300;
+const API_URL = 'http://192.168.0.119:8080/api'; // substitua pelo IP real do backend
 
-export default function MapaPatio({ motoSelecionada }) {
+export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
   const [modalVisible, setModalVisible] = useState(false);
-  const [posicaoUsuario, setPosicaoUsuario] = useState({ x: 0.1, y: 0.9 });
   const [carregando, setCarregando] = useState(false);
+  const [posicaoUsuario, setPosicaoUsuario] = useState({ x: 0.1, y: 0.9 });
+  const [motoAtual, setMotoAtual] = useState(motoSelecionada);
 
-  const x = motoSelecionada?.localizacao?.x ?? 0.4;
-  const y = motoSelecionada?.localizacao?.y ?? 0.7;
+  useEffect(() => {
+    if (motoSelecionada?.id) fetchMotoLocation(motoSelecionada.id);
+  }, [motoSelecionada]);
+
+  const fetchMotoLocation = async (id) => {
+    try {
+      setCarregando(true);
+      const response = await axios.get(`${API_URL}/motos/${id}/location`);
+      setMotoAtual({ ...motoSelecionada, location: response.data });
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Erro', 'Não foi possível carregar a localização da moto.');
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const x = motoAtual?.location?.x ?? 0;
+  const y = motoAtual?.location?.y ?? 0;
 
   const left = x * MAP_WIDTH;
   const top = y * MAP_HEIGHT;
@@ -21,22 +41,8 @@ export default function MapaPatio({ motoSelecionada }) {
 
   const distancia = Math.sqrt(Math.pow(left - leftUser, 2) + Math.pow(top - topUser, 2)) * 100;
 
-  useEffect(() => {
-    setPosicaoUsuario({ x: 0.1, y: 0.9 });
-  }, []);
-
-  const renderLinha = () => {
-    const largura = Math.sqrt(Math.pow(left - leftUser, 2) + Math.pow(top - topUser, 2));
-    const angulo = Math.atan2(top - topUser, left - leftUser) * (180 / Math.PI);
-    return (
-      <View  
-      />
-    );
-  };
-
   const renderMapa = () => (
     <View style={styles.mapa}>
-      {renderLinha()}
       <View style={[styles.ponto, styles.moto, { left, top }]}>
         <Text style={styles.icone}>🏍</Text>
       </View>
@@ -52,24 +58,24 @@ export default function MapaPatio({ motoSelecionada }) {
 
       {carregando ? <ActivityIndicator size="large" color={colors.primary} /> : renderMapa()}
 
-      {motoSelecionada && (
+      {motoAtual && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{motoSelecionada.modelo || 'Moto'}</Text>
+          <Text style={styles.cardTitle}>{motoAtual.modelo || 'Moto'}</Text>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Placa:</Text>
-            <Text style={styles.valor}>{motoSelecionada.placa || 'N/A'}</Text>
+            <Text style={styles.valor}>{motoAtual.placa || 'N/A'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Chassi:</Text>
-            <Text style={styles.valor}>{motoSelecionada.chassi || 'N/A'}</Text>
+            <Text style={styles.valor}>{motoAtual.chassi || 'N/A'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Categoria:</Text>
-            <Text style={styles.valor}>{motoSelecionada.categoria || 'N/A'}</Text>
+            <Text style={styles.valor}>{motoAtual.categoria || 'N/A'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Status:</Text>
-            <Text style={styles.valor}>{motoSelecionada.status}</Text>
+            <Text style={styles.valor}>{motoAtual.status || 'N/A'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Distância:</Text>
