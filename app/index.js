@@ -17,8 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { ThemeContext } from '../src/context/ThemeContext.js';
 import colors from '../src/theme/colors.js';
-
-const BASE_URL = "http://10.3.75.8:8080/api";
+import api from '../src/config/api.js'; // <-- agora usa a instância centralizada
 
 const LANGUAGES = [
   { code: 'pt', label: 'Português', emoji: '🇧🇷' },
@@ -28,21 +27,17 @@ const LANGUAGES = [
 
 const TEXTS = {
   pt: { welcome: 'SEJA BEM-VINDO', user: 'E-mail', pass: 'Senha', enter: 'Entrar', error: 'Usuário ou senha incorretos' },
-  en: { welcome: 'WELCOME', user: 'E-mai', pass: 'Password', enter: 'Login', error: 'Incorrect username or password' },
-  es: { welcome: 'BIENVENIDO', user: 'E-mai', pass: 'Contraseña', enter: 'Entrar', error: 'Usuario o contraseña incorrectos' },
+  en: { welcome: 'WELCOME', user: 'E-mail', pass: 'Password', enter: 'Login', error: 'Incorrect username or password' },
+  es: { welcome: 'BIENVENIDO', user: 'E-mail', pass: 'Contraseña', enter: 'Entrar', error: 'Usuario o contraseña incorrectos' },
 };
 
 function gerarCodigoAdm() {
   return 'ADM-' + Math.floor(Math.random() * 1000000);
 }
 
-// Valida email
+// Validações
 const validarEmail = (email) => /\S+@\S+\.\S+/.test(email);
-
-// Valida senha (mínimo 6 caracteres)
 const validarSenha = (senha) => senha.length >= 6;
-
-// Valida CNPJ (14 dígitos)
 const validarCNPJ = (cnpj) => /^\d{14}$/.test(cnpj);
 
 export default function Login() {
@@ -80,14 +75,10 @@ export default function Login() {
 
     setLoadingLogin(true);
     try {
-      const response = await fetch(`${BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: usuario, senha })
-      });
+      const response = await api.post('/auth/login', { email: usuario, senha });
 
-      if (response.ok) {
-        const token = await response.text();
+      if (response.status === 200) {
+        const token = response.data; // backend retorna token como string
         await AsyncStorage.setItem('@usuario_logado', JSON.stringify({ token, usuario }));
         router.replace('/selecao-patio');
       } else {
@@ -131,20 +122,14 @@ export default function Login() {
         ? { nome: cadastro.nome, email: cadastro.email, senha: cadastro.senha, cnpj: cadastro.cnpj, codigoAdm: cadastro.codigoAdm }
         : { nome: cadastro.nome, email: cadastro.email, senha: cadastro.senha, codigoFuncionario: cadastro.codigoFuncionario };
 
-      const response = await fetch(`${BASE_URL}/auth/register/${tipoCadastro}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      const response = await api.post(`/auth/register/${tipoCadastro}`, body);
 
-      if (response.ok) {
-        const message = await response.text();
-        Alert.alert('Sucesso', message);
+      if (response.status === 200) {
+        Alert.alert('Sucesso', response.data || 'Cadastro realizado!');
         setShowCadastro(false);
         setCadastro({ nome: '', email: '', senha: '', cnpj: '', codigoAdm: gerarCodigoAdm(), codigoFuncionario: '' });
       } else {
-        const errorText = await response.text();
-        setErroCadastro(errorText || 'Erro no cadastro');
+        setErroCadastro(response.data || 'Erro no cadastro');
       }
     } catch (error) {
       console.log(error);
@@ -155,11 +140,19 @@ export default function Login() {
   };
 
   return (
-    <KeyboardAvoidingView style={[styles.container, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       {/* Top Bar */}
       <View style={styles.topBar}>
         <Text style={{ fontSize: 22, marginRight: 8 }}>{temaEscuro ? '🌙' : '☀️'}</Text>
-        <Switch value={temaEscuro} onValueChange={toggleTema} thumbColor={temaEscuro ? colors.primary : '#ccc'} trackColor={{ false: '#ccc', true: colors.primary }} />
+        <Switch
+          value={temaEscuro}
+          onValueChange={toggleTema}
+          thumbColor={temaEscuro ? colors.primary : '#ccc'}
+          trackColor={{ false: '#ccc', true: colors.primary }}
+        />
       </View>
 
       {/* Logo */}
@@ -221,6 +214,7 @@ export default function Login() {
               {idioma === 'pt' ? 'Cadastro de Usuário' : idioma === 'en' ? 'User Registration' : 'Registro de Usuario'}
             </Text>
 
+            {/* Tipo de Cadastro */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 10 }}>
               <TouchableOpacity onPress={() => setTipoCadastro('admin')} style={{ marginRight: 20 }}>
                 <Text style={{ color: tipoCadastro === 'admin' ? colors.primary : theme.text, fontWeight: 'bold' }}>
@@ -234,7 +228,7 @@ export default function Login() {
               </TouchableOpacity>
             </View>
 
-            {/* Inputs cadastro */}
+            {/* Inputs Cadastro */}
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: erroCadastro && !cadastro.nome ? 'red' : colors.primary }]}
               placeholder="Nome"
