@@ -1,4 +1,4 @@
-import React, { useState, useContext, useCallback } from "react";
+import React, { useState, useContext, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,51 +7,11 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from "react-native";
+import axios from "axios";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { ThemeContext } from "../../src/context/ThemeContext";
-
-const mockRelatorio = {
-  hoje: {
-    data: new Date().toLocaleDateString(),
-    motosEntraram: 5,
-    motosSairam: 3,
-    foraDoPatio: 1,
-    emAtraso: 0,
-    planoAquisicao: 2,
-    planoAluguel: 3,
-    motosPatio: [
-      { placa: "ABC1234", categoria: "Aluguel" },
-      { placa: "XYZ5678", categoria: "Aquisição" },
-    ],
-  },
-  "15 dias": {
-    data: new Date().toLocaleDateString(),
-    motosEntraram: 25,
-    motosSairam: 20,
-    foraDoPatio: 3,
-    emAtraso: 2,
-    planoAquisicao: 10,
-    planoAluguel: 15,
-    motosPatio: [
-      { placa: "QWE9876", categoria: "Aluguel" },
-      { placa: "MNO4321", categoria: "Aluguel" },
-    ],
-  },
-  "30 dias": {
-    data: new Date().toLocaleDateString(),
-    motosEntraram: 45,
-    motosSairam: 38,
-    foraDoPatio: 5,
-    emAtraso: 3,
-    planoAquisicao: 18,
-    planoAluguel: 27,
-    motosPatio: [
-      { placa: "DEF5555", categoria: "Aquisição" },
-      { placa: "GHI7890", categoria: "Aluguel" },
-    ],
-  },
-};
+import { API_URL } from "../../src/config/api"; // URL do backend
 
 export default function RelatoriosUnificado() {
   const { temaEscuro, idioma } = useContext(ThemeContext);
@@ -61,8 +21,68 @@ export default function RelatoriosUnificado() {
 
   const [periodo, setPeriodo] = useState("hoje");
   const [refreshing, setRefreshing] = useState(false);
-  const relatorio = mockRelatorio[periodo];
+  const [relatorio, setRelatorio] = useState(null);
 
+  // Função para carregar dados do backend
+  const carregarRelatorio = useCallback(async () => {
+    try {
+      // Buscar todas as motos
+      const motosRes = await axios.get(`${API_URL}/motos`);
+      const motos = motosRes.data;
+
+      // Filtrar por período
+      const hoje = new Date();
+      let motosEntraram = 0;
+      let motosSairam = 0; // você pode criar campo no backend para histórico de saída
+      let foraDoPatio = 0;
+      let emAtraso = 0; // calculado conforme regra de atraso
+      let planoAquisicao = 0;
+      let planoAluguel = 0;
+
+      // Agrupar motos no pátio e por categoria
+      const motosPatio = motos.map(m => ({
+        placa: m.placa,
+        categoria: m.categoria.toLowerCase(),
+      }));
+
+      motos.forEach(m => {
+        // Contagem de categorias
+        if (m.categoria.toLowerCase() === "aluguel") planoAluguel++;
+        else if (m.categoria.toLowerCase() === "aquisição") planoAquisicao++;
+
+        // Contagem de motos dentro ou fora do pátio
+        if (m.status === "patio") motosEntraram++;
+        else foraDoPatio++;
+      });
+
+      setRelatorio({
+        data: hoje.toLocaleDateString(),
+        motosEntraram,
+        motosSairam,
+        foraDoPatio,
+        emAtraso,
+        planoAquisicao,
+        planoAluguel,
+        motosPatio,
+      });
+    } catch (err) {
+      console.log("Erro ao carregar relatório:", err);
+      setRelatorio({
+        data: new Date().toLocaleDateString(),
+        motosEntraram: 0,
+        motosSairam: 0,
+        foraDoPatio: 0,
+        emAtraso: 0,
+        planoAquisicao: 0,
+        planoAluguel: 0,
+        motosPatio: [],
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarRelatorio();
+  }, [carregarRelatorio]);
 
   const t = {
     relatorio: idioma === "pt" ? "Relatório do Pátio" : idioma === "es" ? "Informe del Patio" : "Yard Report",
@@ -76,9 +96,10 @@ export default function RelatoriosUnificado() {
   };
 
   const gerarRelatorioCompletoPDF = async () => {
+    if (!relatorio) return;
     const html = `
       <html><body style="font-family: sans-serif;">
-        <h1 style="text-align:center;">${t.relatorio} - ${periodo.toUpperCase()}</h1>
+        <h1 style="text-align:center;">${t.relatorio}</h1>
         <p><strong>Data de Geração:</strong> ${relatorio.data}</p>
         <h2>${t.resumo}</h2>
         <ul>
@@ -98,8 +119,8 @@ export default function RelatoriosUnificado() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
+    carregarRelatorio().then(() => setRefreshing(false));
+  }, [carregarRelatorio]);
 
   const ResumoMotos = ({ total, categorias }) => (
     <View style={[styles.card, { backgroundColor: tema.card }]}>
@@ -115,6 +136,14 @@ export default function RelatoriosUnificado() {
       </View>
     </View>
   );
+
+  if (!relatorio) {
+    return (
+      <View style={[styles.container, { backgroundColor: tema.fundo }]}>
+        <Text style={{ color: tema.texto }}>Carregando...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -139,7 +168,6 @@ export default function RelatoriosUnificado() {
         ))}
       </View>
 
-      {/* Resumo do período */}
       <ResumoMotos
         total={relatorio.motosEntraram - relatorio.motosSairam + relatorio.foraDoPatio}
         categorias={{
@@ -148,7 +176,6 @@ export default function RelatoriosUnificado() {
         }}
       />
 
-      {/* Lista de motos */}
       <View style={[styles.card, { backgroundColor: tema.card }]}>
         <Text style={[styles.subTitle, { color: tema.texto }]}>{t.motosPatio}</Text>
         {relatorio.motosPatio.length > 0 ? (
@@ -162,7 +189,6 @@ export default function RelatoriosUnificado() {
         )}
       </View>
 
-      {/* Botão PDF */}
       <TouchableOpacity
         style={[styles.btn, { backgroundColor: tema.primary }]}
         onPress={gerarRelatorioCompletoPDF}
