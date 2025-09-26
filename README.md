@@ -1,38 +1,140 @@
-# MOTOFACIL-APP 🏍️
+# 🏍️ MotoFácil - Guia Completo Frontend & Backend
 
-<img src="https://img.shields.io/badge/MotoFacil-App-blue" alt="MotoFacil App" />
+Este guia cobre o processo de instalação, configuração e execução do MotoFácil, incluindo backend (Java/Spring Boot) e frontend (React).
 
-## 👥 Integrantes
+## 1️⃣ Pré-requisitos
 
-- **Cauan da Cruz** - RM: 558238
-- **Igor Barrocal** - RM: 555217
+- **Node.js 18+** e **npm** ou **yarn**
+- **Java 17+** e **Maven**
+- **Git**
+- **Postman** (opcional, para testar a API)
+- Verifique se as portas 8080 (backend) e 3000 (frontend) estão livres.
 
-## 📋 Descrição do Projeto
+## 2️⃣ Clonando o Backend
 
-O MOTOFACIL-APP é um aplicativo criado para facilitar a gestão e o acompanhamento de motos, proporcionando ao usuário controle de manutenções, registro de abastecimentos, alertas personalizados e relatórios detalhados. Desenvolvido para oferecer praticidade e maior controle sobre o histórico do veículo, o app é ideal para motociclistas que buscam organização e tranquilidade.
+```bash
+git clone https://github.com/Cruz-011/motofacil-java.git
+cd motofacil-java
+```
 
-## 🚀 Funcionalidades
+## 3️⃣ Executando o Backend
 
-- Cadastro e gerenciamento de motos
-- Controle de manutenção e revisões
-- Histórico de abastecimentos
-- Alertas personalizados
-- Relatórios detalhados
+No diretório `motofacil-backend`:
 
-## 🛠️ Tecnologias Utilizadas
+- **Linux/Mac:**
+  ```bash
+  ./mvnw spring-boot:run
+  ```
+- **Windows:**
+  ```bash
+  mvnw.cmd spring-boot:run
+  ```
 
-- **React Native**
-- **Expo**
-- **Node.js**
-- **Firebase**
-- **Styled Components**
+O backend estará disponível em: [http://localhost:8080](http://localhost:8080)
 
-## 📲 Instalação
+> Se precisar alterar a porta, edite `src/main/resources/application.properties`.
+
+## 4️⃣ Clonando o Frontend
+
+Em outro terminal:
 
 ```bash
 git clone https://github.com/Cruz-011/MOTOFACIL-APP.git
 cd MOTOFACIL-APP
-npm install
-npm start
 ```
-> Certifique-se de ter o [Node.js](https://nodejs.org/) e o [Expo CLI](https://docs.expo.dev/get-started/installation/) instalados.
+
+## 5️⃣ Configurando a URL da API no Frontend
+
+Edite o arquivo:
+
+```
+src/config/api.js
+```
+
+Altere a linha:
+
+```js
+export const API_URL = "http://localhost:8080/api"; // Endereço do backend
+```
+
+Se o backend estiver em outro IP, ajuste aqui.
+
+## 6️⃣ Instalando Dependências do Frontend
+
+No diretório `motofacil-frontend`:
+
+```bash
+npm install
+# ou
+yarn
+```
+
+## 7️⃣ Executando o Frontend
+
+Ainda em `motofacil-frontend`:
+
+```bash
+npm expo start
+# ou
+yarn expo start
+```
+
+O frontend abrirá em: [http://localhost:3000](http://localhost:3000)
+
+## 8️⃣ Estrutura do Frontend
+
+```
+motofacil-frontend/
+├─ app/
+│  ├─ components/      # Componentes reutilizáveis
+│  ├─ (tabs)/          # Telas (Motos, Pátios, Login)
+│  ├─ App.js           # Arquivo principal
+│  ├─ index.js         # Entrada da aplicação
+|  └─ src/
+|      └─config/api.js    # Configuração da URL da API
+
+├─ package.json        # Dependências e scripts
+```
+
+## 9️⃣ Testando Endpoints com Postman
+
+- **Listar todas as motos**
+  ```
+  GET http://localhost:8080/api/motos
+  ```
+
+- **Buscar moto por ID**
+  ```
+  GET http://localhost:8080/api/motos/{id}
+  ```
+
+- **Criar nova moto**
+  ```
+  POST http://localhost:8080/api/motos
+  Body (JSON):
+  {
+    "placa": "ABC1234",
+    "modelo": "Mottu Sport",
+    "patio": { "id": 1 }
+  }
+  ```
+
+- **Atualizar localização de uma moto**
+  ```
+  PUT http://localhost:8080/api/motos/1/location
+  Body (JSON):
+  {
+    "x": 2.5,
+    "y": 3.0,
+    "patioId": 1,
+    "tag": "patio"
+  }
+  ```
+
+## 🔟 Observações Importantes
+
+- Sempre inicie o backend antes do frontend.
+- Alterações em `API_URL` exigem reinício do frontend.
+- Problemas de CORS devem ser resolvidos no backend (permitindo `http://localhost:3000`).
+
+---
