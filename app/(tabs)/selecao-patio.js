@@ -14,18 +14,16 @@ import {
   RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
 import { ThemeContext } from "../../src/context/ThemeContext";
-
-const API_URL = "http://10.3.75.8:8080/api/patios"; // Substitua pelo seu endpoint real
+import api from "../../src/config/api"; // <-- usa a instância centralizada
 
 export default function PatioManager() {
   const { temaEscuro, idioma } = useContext(ThemeContext);
   const [aba, setAba] = useState("lista"); // "lista" ou "conectar"
 
   const tema = temaEscuro
-    ? { fundo: "#111827", texto: "#fff", card: "#1f2937", primary: "#3b82f6", secundario: "#9ca3af", ipBg: "#222" }
-    : { fundo: "#f9fafb", texto: "#111827", card: "#fff", primary: "#2563eb", secundario: "#6b7280", ipBg: "#e9e9e9" };
+    ? { fundo: "#111827", texto: "#fff", card: "#1f2937", primary: "#3b82f6", secundario: "#9ca3af" }
+    : { fundo: "#f9fafb", texto: "#111827", card: "#fff", primary: "#2563eb", secundario: "#6b7280" };
 
   const t = {
     selecionarPatio: idioma === "pt" ? "Selecione um Pátio" : idioma === "es" ? "Seleccione un Patio" : "Select a Yard",
@@ -37,7 +35,6 @@ export default function PatioManager() {
     codigoUnico: idioma === "pt" ? "Código Único" : idioma === "es" ? "Código Único" : "Unique Code",
     esp32: idioma === "pt" ? "ESP32 Central" : idioma === "es" ? "ESP32 Central" : "ESP32 Central",
     cadastrar: idioma === "pt" ? "Cadastrar Pátio" : idioma === "es" ? "Registrar Patio" : "Register Yard",
-    conectando: idioma === "pt" ? "Conectando..." : idioma === "es" ? "Conectando..." : "Connecting...",
     sucesso: idioma === "pt" ? "Cadastrado com sucesso!" : idioma === "es" ? "¡Registrado exitosamente!" : "Registered successfully!",
     erro: idioma === "pt" ? "Erro ao cadastrar." : idioma === "es" ? "Error al registrar." : "Failed to register.",
     informeCampos: idioma === "pt" ? "Informe todos os campos." : idioma === "es" ? "Ingrese todos los campos." : "Fill all fields.",
@@ -58,7 +55,7 @@ export default function PatioManager() {
   const carregarPatios = async () => {
     try {
       setRefreshing(true);
-      const response = await axios.get(API_URL);
+      const response = await api.get("/patios");
       setPatios(response.data);
     } catch (error) {
       console.error("Erro ao carregar pátios:", error);
@@ -76,9 +73,7 @@ export default function PatioManager() {
     carregarPatios();
   }, []);
 
-  const selecionar = (patio) => {
-    setPatioSelecionado(patio);
-  };
+  const selecionar = (patio) => setPatioSelecionado(patio);
 
   const deletar = async (id) => {
     Alert.alert("Excluir", "Tem certeza que deseja excluir este pátio?", [
@@ -87,7 +82,7 @@ export default function PatioManager() {
         text: "Excluir",
         onPress: async () => {
           try {
-            await axios.delete(`${API_URL}/${id}`);
+            await api.delete(`/patios/${id}`);
             carregarPatios();
             if (patioSelecionado?.id === id) setPatioSelecionado(null);
           } catch (error) {
@@ -108,12 +103,7 @@ export default function PatioManager() {
 
     setLoading(true);
     try {
-      await axios.post(API_URL, {
-        nome,
-        endereco,
-        codigoUnico,
-        esp32Central,
-      });
+      await api.post("/patios", { nome, endereco, codigoUnico, esp32Central });
       Alert.alert(t.sucesso);
       setNome(""); setEndereco(""); setCodigoUnico(""); setEsp32Central("");
       setAba("lista");
