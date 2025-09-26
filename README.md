@@ -33,6 +33,24 @@ No diretório `motofacil-backend`:
 O backend estará disponível em: [http://localhost:8080](http://localhost:8080)
 
 > Se precisar alterar a porta, edite `src/main/resources/application.properties`.
+Configurando o Backend (Oracle)
+
+No arquivo src/main/resources/application.properties, configure:
+
+spring.datasource.url=jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL
+spring.datasource.username=rm...
+spring.datasource.password=....
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# Swagger
+springdoc.api-docs.path=/api-docs
+springdoc.swagger-ui.path=/swagger-ui.html
+
+
+🔹 Para desenvolvimento local, você pode usar H2 se não tiver Oracle.
 
 ## 4️⃣ Clonando o Frontend
 
