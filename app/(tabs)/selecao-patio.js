@@ -15,11 +15,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../../src/context/ThemeContext";
-import api from "../../src/config/api"; // <-- usa a instância centralizada
+import api from "../../src/config/api"; 
 
 export default function PatioManager() {
   const { temaEscuro, idioma } = useContext(ThemeContext);
-  const [aba, setAba] = useState("lista"); // "lista" ou "conectar"
+  const [aba, setAba] = useState("lista"); 
 
   const tema = temaEscuro
     ? { fundo: "#111827", texto: "#fff", card: "#1f2937", primary: "#3b82f6", secundario: "#9ca3af" }

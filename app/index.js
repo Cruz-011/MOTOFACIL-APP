@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { ThemeContext } from '../src/context/ThemeContext.js';
 import colors from '../src/theme/colors.js';
-import api from '../src/config/api.js'; // <-- agora usa a instância centralizada
+import api from '../src/config/api.js'; 
 
 const LANGUAGES = [
   { code: 'pt', label: 'Português', emoji: '🇧🇷' },
@@ -78,7 +78,7 @@ export default function Login() {
       const response = await api.post('/auth/login', { email: usuario, senha });
 
       if (response.status === 200) {
-        const token = response.data; // backend retorna token como string
+        const token = response.data; 
         await AsyncStorage.setItem('@usuario_logado', JSON.stringify({ token, usuario }));
         router.replace('/selecao-patio');
       } else {

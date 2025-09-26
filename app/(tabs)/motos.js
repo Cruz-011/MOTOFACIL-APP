@@ -1,4 +1,3 @@
-// src/screens/Motos.js
 import React, { useState, useEffect, useContext, useCallback } from "react";
 import {
   View,
@@ -129,7 +128,7 @@ export default function Motos() {
         categoria,
         codigo: codigoFinal,
         descricao: descricao || null,
-        patio: { id: patioSelecionado.id }, // <<< assim funciona com o backend atual
+        patio: { id: patioSelecionado.id }, 
         ativo: true,
       });
 

@@ -7,8 +7,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { ThemeContext } from '../../src/context/ThemeContext';
-import axios from 'axios';
-
+import api from '../../src/config/api'; 
 export default function Configuracoes() {
   const { temaEscuro, toggleTema, idioma, mudarIdioma } = useContext(ThemeContext);
 
@@ -25,19 +24,19 @@ export default function Configuracoes() {
   const [novaSenha, setNovaSenha] = useState('');
 
   const router = useRouter();
-  const API = 'http://10.3.75.8:8080/api/user'; // backend
 
   // --- Buscar usuário logado ---
   const buscarUsuarioLogado = async () => {
+    setLoading(true);
     try {
       const dadosLogin = await AsyncStorage.getItem('@usuario_logado');
       if (!dadosLogin) return;
 
       const { usuario: email } = JSON.parse(dadosLogin);
-      const res = await axios.get(`${API}/me/${email}`);
+      const res = await api.get(`/user/me/${email}`);
       setUsuario(res.data);
     } catch (e) {
-      console.log('Erro ao buscar usuário logado:', e.message);
+      console.log('Erro ao buscar usuário logado:', e.response?.data || e.message);
       Alert.alert('Erro', 'Não foi possível carregar os dados do usuário.');
     } finally {
       setLoading(false);
@@ -58,12 +57,13 @@ export default function Configuracoes() {
   const alterarNome = async () => {
     if (!novoNome.trim()) return;
     try {
-      await axios.put(`${API}/update-nome`, { email: usuario.email, nome: novoNome });
+      await api.put(`/user/update-nome`, { email: usuario.email, nome: novoNome });
       setNovoNome('');
       setModalNome(false);
       await buscarUsuarioLogado();
       Alert.alert('Sucesso', idioma === 'pt' ? 'Nome alterado' : idioma === 'es' ? 'Nombre cambiado' : 'Name changed');
     } catch (e) {
+      console.log('Erro alterarNome:', e.response?.data || e.message);
       Alert.alert('Erro', e.response?.data || 'Erro ao alterar nome');
     }
   };
@@ -72,13 +72,15 @@ export default function Configuracoes() {
   const alterarEmail = async () => {
     if (!novoEmail.trim()) return;
     try {
-      await axios.put(`${API}/update-email`, { email: usuario.email, emailNovo: novoEmail });
-      await AsyncStorage.setItem('@usuario_logado', JSON.stringify({ token: JSON.parse(await AsyncStorage.getItem('@usuario_logado')).token, usuario: novoEmail }));
+      await api.put(`/user/update-email`, { email: usuario.email, emailNovo: novoEmail });
+      const dadosLogin = JSON.parse(await AsyncStorage.getItem('@usuario_logado'));
+      await AsyncStorage.setItem('@usuario_logado', JSON.stringify({ token: dadosLogin.token, usuario: novoEmail }));
       setNovoEmail('');
       setModalEmail(false);
       await buscarUsuarioLogado();
       Alert.alert('Sucesso', idioma === 'pt' ? 'Email alterado' : idioma === 'es' ? 'Correo cambiado' : 'Email changed');
     } catch (e) {
+      console.log('Erro alterarEmail:', e.response?.data || e.message);
       Alert.alert('Erro', e.response?.data || 'Erro ao alterar email');
     }
   };
@@ -87,12 +89,13 @@ export default function Configuracoes() {
   const alterarSenha = async () => {
     if (!senhaAntiga || !novaSenha) return;
     try {
-      await axios.put(`${API}/update-senha`, { email: usuario.email, senhaAntiga, novaSenha });
+      await api.put(`/user/update-senha`, { email: usuario.email, senhaAntiga, novaSenha });
       setSenhaAntiga('');
       setNovaSenha('');
       setModalSenha(false);
       Alert.alert('Sucesso', idioma === 'pt' ? 'Senha alterada' : idioma === 'es' ? 'Contraseña cambiada' : 'Password changed');
     } catch (e) {
+      console.log('Erro alterarSenha:', e.response?.data || e.message);
       Alert.alert('Erro', e.response?.data || 'Erro ao alterar senha');
     }
   };
@@ -184,7 +187,9 @@ export default function Configuracoes() {
         <Text style={[styles.botaoTexto, { color: '#fff' }]}>{idioma === 'pt' ? 'Sair da Conta' : 'Sign Out'}</Text>
       </TouchableOpacity>
 
-      {/* Modais */}
+      {/* ---------------- Modais ---------------- */}
+
+      {/* Modal Nome */}
       <Modal visible={modalNome} transparent animationType="fade">
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, themeStyles.card]}>
@@ -202,6 +207,7 @@ export default function Configuracoes() {
         </View>
       </Modal>
 
+      {/* Modal Email */}
       <Modal visible={modalEmail} transparent animationType="fade">
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, themeStyles.card]}>
@@ -219,6 +225,7 @@ export default function Configuracoes() {
         </View>
       </Modal>
 
+      {/* Modal Senha */}
       <Modal visible={modalSenha} transparent animationType="fade">
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, themeStyles.card]}>
@@ -241,7 +248,7 @@ export default function Configuracoes() {
   );
 }
 
-// --- Estilos ---
+// ----------- Estilos (tema claro/escuro) ----------
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingTop: 40 },
   titulo: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 18 },

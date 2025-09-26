@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Dimensions, Alert 
 } from 'react-native';
-import axios from 'axios';
+import api from '../src/config/api.js';
 import colors from '../src/theme/colors.js';
 
 const { width } = Dimensions.get('window');
 const MAP_WIDTH = width * 0.9; 
 const MAP_HEIGHT = MAP_WIDTH; 
 const ICON_SIZE = 30;
-const API_URL = 'http://10.3.75.8:8080/api'; // substitua pelo IP real do backend
 
 export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -24,7 +23,7 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
   const fetchMotoLocation = async (id) => {
     try {
       setCarregando(true);
-      const response = await axios.get(`${API_URL}/motos/${id}/location`);
+      const response = await api.get(`/motos/${id}/location`);
       setMotoAtual({ ...motoSelecionada, location: response.data });
     } catch (err) {
       console.log(err);

@@ -63,7 +63,7 @@ export default function RelatoriosUnificado() {
   const [refreshing, setRefreshing] = useState(false);
   const relatorio = mockRelatorio[periodo];
 
-  // Traduzir textos
+
   const t = {
     relatorio: idioma === "pt" ? "Relatório do Pátio" : idioma === "es" ? "Informe del Patio" : "Yard Report",
     hoje: idioma === "pt" ? "hoje" : idioma === "es" ? "hoy" : "today",
@@ -101,7 +101,6 @@ export default function RelatoriosUnificado() {
     setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  // Componente de resumo (incorporado aqui)
   const ResumoMotos = ({ total, categorias }) => (
     <View style={[styles.card, { backgroundColor: tema.card }]}>
       <Text style={[styles.title, { color: tema.primary }]}>{t.resumo}</Text>
@@ -125,7 +124,6 @@ export default function RelatoriosUnificado() {
     >
       <Text style={[styles.header, { color: tema.primary }]}>{t.relatorio}</Text>
 
-      {/* Filtros */}
       <View style={styles.filtrosContainer}>
         {["hoje", "15 dias", "30 dias"].map((p) => (
           <TouchableOpacity
