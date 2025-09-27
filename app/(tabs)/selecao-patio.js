@@ -15,11 +15,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../../src/context/ThemeContext";
-import api from "../../src/config/api"; 
+import api from "../../src/config/api";
+import MapaPatio from "../../components/MapaPatio";
 
 export default function PatioManager() {
   const { temaEscuro, idioma } = useContext(ThemeContext);
-  const [aba, setAba] = useState("lista"); 
+  const [aba, setAba] = useState("lista");
 
   const tema = temaEscuro
     ? { fundo: "#111827", texto: "#fff", card: "#1f2937", primary: "#3b82f6", secundario: "#9ca3af" }
@@ -82,7 +83,7 @@ export default function PatioManager() {
         text: "Excluir",
         onPress: async () => {
           try {
-            await api.delete(`/patios/${id}`);
+            await api.delete(`/api/patios/${id}`);
             carregarPatios();
             if (patioSelecionado?.id === id) setPatioSelecionado(null);
           } catch (error) {
@@ -119,62 +120,70 @@ export default function PatioManager() {
   // ----------- Render -----------
 
   const renderLista = () => (
+
     <View>
-      <Text style={[styles.title, { color: tema.primary }]}>{t.selecionarPatio}</Text>
+      <ScrollView>
+        <Text style={[styles.title, { color: tema.primary }]}>{t.selecionarPatio}</Text>
+        <TouchableOpacity style={[styles.botao, { backgroundColor: tema.primary }]} onPress={() => setAba("conectar")}>
+          <Ionicons name="add-circle-outline" size={20} color="#fff" />
+          <Text style={[styles.botaoTexto, { color: "#fff" }]}>{t.conectarNovo}</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.botao, { backgroundColor: tema.primary }]} onPress={() => setAba("conectar")}>
-        <Ionicons name="add-circle-outline" size={20} color="#fff" />
-        <Text style={[styles.botaoTexto, { color: "#fff" }]}>{t.conectarNovo}</Text>
-      </TouchableOpacity>
-
-      <FlatList
-        data={patios}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => {
-          const isSelected = patioSelecionado?.id === item.id;
-          return (
-            <TouchableOpacity
-              style={[styles.card, { backgroundColor: tema.card, borderColor: isSelected ? tema.primary : tema.secundario }]}
-              onPress={() => selecionar(item)}
-              activeOpacity={0.8}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                <Ionicons
-                  name={isSelected ? "home" : "home-outline"}
-                  size={22}
-                  color={isSelected ? tema.primary : tema.secundario}
-                  style={{ marginRight: 10 }}
-                />
-                <Text style={[styles.cardText, { color: isSelected ? tema.primary : tema.texto }]}>{item.nome}</Text>
-              </View>
-              <TouchableOpacity onPress={() => deletar(item.id)}>
-                <Ionicons name="trash-outline" size={22} color="red" />
+        <FlatList
+          data={patios}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => {
+            const isSelected = patioSelecionado?.id === item.id;
+            return (
+              <TouchableOpacity
+                style={[styles.card, { backgroundColor: tema.card, borderColor: isSelected ? tema.primary : tema.secundario }]}
+                onPress={() => selecionar(item)}
+                activeOpacity={0.8}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                  <Ionicons
+                    name={isSelected ? "home" : "home-outline"}
+                    size={22}
+                    color={isSelected ? tema.primary : tema.secundario}
+                    style={{ marginRight: 10 }}
+                  />
+                  <Text style={[styles.cardText, { color: isSelected ? tema.primary : tema.texto }]}>{item.nome}</Text>
+                </View>
+                <TouchableOpacity onPress={() => deletar(item.id)}>
+                  <Ionicons name="trash-outline" size={22} color="red" />
+                </TouchableOpacity>
               </TouchableOpacity>
-            </TouchableOpacity>
-          );
-        }}
-        ListEmptyComponent={<Text style={[styles.empty, { color: tema.secundario }]}>{t.nenhumPatio}</Text>}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        style={{ marginTop: 20, maxHeight: 250 }}
-      />
+            );
+          }}
+          ListEmptyComponent={<Text style={[styles.empty, { color: tema.secundario }]}>{t.nenhumPatio}</Text>}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          style={{ marginTop: 20, maxHeight: 250 }}
+        />
 
-      {patioSelecionado && (
-        <View style={[styles.miniMapa, { backgroundColor: tema.card, borderColor: tema.primary }]}>
-          <Text style={[styles.miniMapaTitle, { color: tema.primary }]}>{patioSelecionado.nome}</Text>
-          <View style={styles.mapaPlaceholder}>
-            <Ionicons name="map-outline" size={70} color={tema.secundario} />
-            <Text style={{ color: tema.secundario, marginTop: 10 }}>Visualização do pátio</Text>
+        {patioSelecionado && (
+          <View style={[styles.miniMapa, { backgroundColor: tema.card, borderColor: tema.primary }]}>
+            {/* Nome do pátio com espaçamento acima do mapa */}
+            <Text style={[styles.miniMapaTitle, { color: tema.primary }]}>{patioSelecionado.nome}</Text>
+            <ScrollView
+              contentContainerStyle={styles.mapaScrollContent}
+              style={{ maxHeight: 340 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.mapaPlaceholder}>
+                <MapaPatio patioSelecionado={patioSelecionado} />
+              </View>
+            </ScrollView>
           </View>
-        </View>
-      )}
+        )}
+        </ScrollView>
     </View>
+    
   );
 
   const renderConectar = () => (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <Text style={[styles.title, { color: tema.primary }]}>{t.conectarESP32}</Text>
-
         <TextInput
           placeholder={t.nomePatio}
           value={nome}
@@ -213,8 +222,8 @@ export default function PatioManager() {
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
+       
   );
-
   return <View style={[styles.container, { backgroundColor: tema.fundo }]}>{aba === "lista" ? renderLista() : renderConectar()}</View>;
 }
 
@@ -226,9 +235,18 @@ const styles = StyleSheet.create({
   empty: { textAlign: "center", marginTop: 40, fontSize: 16 },
   botao: { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 14, borderRadius: 10, gap: 8, marginTop: 10 },
   botaoTexto: { fontWeight: "600", fontSize: 16 },
-  miniMapa: { flex: 1, marginTop: 25, padding: 18, borderRadius: 12, borderWidth: 1.5 },
-  miniMapaTitle: { fontWeight: "700", fontSize: 18, marginBottom: 12 },
-  mapaPlaceholder: { flex: 1, minHeight: 250, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  miniMapa: { marginTop: 25, padding: 18, borderRadius: 12, borderWidth: 1.5, maxWidth: 350, alignSelf: "center" },
+  miniMapaTitle: { fontWeight: "700", fontSize: 19, marginBottom: 10, textAlign: "center" },
+  mapaScrollContent: { alignItems: "center", justifyContent: "flex-start", paddingBottom: 12 },
+  mapaPlaceholder: {
+    minHeight: 220,
+    maxHeight: 300,
+    maxWidth: 320,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+  },
   input: { marginTop: 15, borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16 },
   botaoCancelar: { marginTop: 18, padding: 12, borderRadius: 8, alignItems: "center" },
   botaoCancelarTexto: { color: "#fff", fontWeight: "bold", fontSize: 15 },

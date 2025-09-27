@@ -1,24 +1,45 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Dimensions, Alert 
+import {
+  View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Dimensions, Alert
 } from 'react-native';
 import api from '../src/config/api.js';
 import colors from '../src/theme/colors.js';
 
 const { width } = Dimensions.get('window');
-const MAP_WIDTH = width * 0.9; 
-const MAP_HEIGHT = MAP_WIDTH; 
-const ICON_SIZE = 30;
+const MAP_WIDTH = Math.min(width * 0.8, 250); // nunca maior que 350px
+const MAP_HEIGHT = MAP_WIDTH;
+const ICON_SIZE = 25;
 
 export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [posicaoUsuario, setPosicaoUsuario] = useState({ x: 0.1, y: 0.9 });
   const [motoAtual, setMotoAtual] = useState(motoSelecionada);
+  const [patioCoords, setPatioCoords] = useState([]);
+
+  // Carrega coordenadas do pátio selecionado
+  useEffect(() => {
+    if (patioSelecionado?.id) fetchPatioCoords(patioSelecionado.id);
+  }, [patioSelecionado]);
 
   useEffect(() => {
     if (motoSelecionada?.id) fetchMotoLocation(motoSelecionada.id);
   }, [motoSelecionada]);
+
+  const fetchPatioCoords = async (patioId) => {
+    try {
+      setCarregando(true);
+      // Busca o pátio pelo id para pegar suas coordenadas
+      const resp = await api.get(`/patios/${patioId}`);
+      setPatioCoords(resp.data.coordenadasExtremidade || []);
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Erro', 'Não foi possível carregar as coordenadas do pátio.');
+      setPatioCoords([]);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
   const fetchMotoLocation = async (id) => {
     try {
@@ -42,11 +63,32 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
 
   const distancia = Math.sqrt(Math.pow(leftMoto - leftUser, 2) + Math.pow(topMoto - topUser, 2)) * 100;
 
+  // Renderiza os pontos das coordenadas do pátio (os ESPs/cantos)
+  const renderPatioPoints = (mapWidth = MAP_WIDTH, mapHeight = MAP_HEIGHT) => {
+    if (!patioCoords || patioCoords.length === 0) return null;
+    return patioCoords.map((coord, idx) => (
+      <View
+        key={idx}
+        style={[styles.pontoPatio, {
+          left: getCoords(coord.x, mapWidth),
+          top: getCoords(coord.y, mapHeight),
+        }]}
+      >
+        <Text style={styles.iconePatio}>📍</Text>
+        <Text style={styles.patioNome}>{coord.nome || `ESP${idx + 1}`}</Text>
+      </View>
+    ));
+  };
+
   const renderMapa = (mapWidth = MAP_WIDTH, mapHeight = MAP_HEIGHT) => (
     <View style={[styles.mapa, { width: mapWidth, height: mapHeight }]}>
+      {/* Pontos dos cantos do pátio */}
+      {renderPatioPoints(mapWidth, mapHeight)}
+      {/* Moto */}
       <View style={[styles.ponto, styles.moto, { left: leftMoto, top: topMoto }]}>
         <Text style={styles.icone}>🏍</Text>
       </View>
+      {/* Usuário */}
       <View style={[styles.ponto, styles.usuario, { left: leftUser, top: topUser }]}>
         <Text style={styles.icone}>🧍</Text>
       </View>
@@ -112,7 +154,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderColor: colors.primary,
     borderWidth: 1.5,
+
     position: 'relative',
+    maxWidth: 350,
+    maxHeight: 350,
+    width: '100%',
+    height: 350, // ou MAP_HEIGHT
   },
   ponto: {
     position: 'absolute',
@@ -152,4 +199,28 @@ const styles = StyleSheet.create({
   modalTitulo: { fontSize: 22, color: colors.primary, fontWeight: 'bold' },
   modalFecharBtn: { marginTop: 20, backgroundColor: '#444', padding: 12, borderRadius: 10 },
   modalFecharText: { color: '#fff', fontWeight: 'bold' },
+  // Pontos do pátio (cantos)
+  pontoPatio: {
+    position: 'absolute',
+    width: ICON_SIZE + 8,
+    height: ICON_SIZE + 8,
+    borderRadius: (ICON_SIZE + 8) / 2,
+    backgroundColor: '#e0e7ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  mapaPlaceholder: {
+    minHeight: 250,
+    maxHeight: 350,
+    maxWidth: 350,
+    width: '100%',
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  iconePatio: { fontSize: 18, color: colors.primary },
+  patioNome: { fontSize: 11, color: colors.primary, fontWeight: 'bold' }
 });

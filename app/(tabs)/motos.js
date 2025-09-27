@@ -28,9 +28,17 @@ const modelosDisponiveis = [
   { nome: "Mottu Pop" },
 ];
 
+const categoriasDisponiveis = ["aluguel", "aquisição", "mecanica"];
+
 function gerarCodigoAleatorio() {
   return "MOTO-" + Math.floor(Math.random() * 1000000);
 }
+
+// Validação do campo ESP32 Central
+const validarEsp32Central = (valor) => {
+  const regex = /^([a-zA-Z0-9\.\-]+)$/;
+  return regex.test(valor.trim());
+};
 
 export default function Motos() {
   const { temaEscuro, idioma } = useContext(ThemeContext);
@@ -52,6 +60,9 @@ export default function Motos() {
   const [descricao, setDescricao] = useState("");
   const [patioSelecionado, setPatioSelecionado] = useState(null);
 
+  // para voltar moto à patio no modal
+  const [novoPatioSelecionado, setNovoPatioSelecionado] = useState(null);
+
   const tema = temaEscuro
     ? { fundo: "#1f2937", texto: "#fff", card: "#374151", border: "#2563eb", btnPrimary: "#3b82f6", btnDanger: "#ef4444", secundario: "#9ca3af" }
     : { fundo: "#f5f5f5", texto: "#000", card: "#fff", border: "#3b82f6", btnPrimary: "#3b82f6", btnDanger: "#ef4444", secundario: "#6b7280" };
@@ -62,37 +73,34 @@ export default function Motos() {
     cancelar: idioma === "pt" ? "✖️ Cancelar Cadastro" : idioma === "es" ? "✖️ Cancelar Registro" : "✖️ Cancel",
     localizar: idioma === "pt" ? "🗺️ Localizar Moto" : idioma === "es" ? "🗺️ Localizar Moto" : "🗺️ Locate Bike",
     fechar: idioma === "pt" ? "✖️ Fechar" : idioma === "es" ? "✖️ Cerrar" : "✖️ Close",
+    informeCampos: idioma === "pt" ? "Informe todos os campos." : idioma === "es" ? "Ingrese todos los campos." : "Fill all fields.",
+    ipInvalido: idioma === "pt" ? "Informe um IP ou nome válido para o ESP32 Central (ex: 127.0.0.1 ou 10.3.52.4)" : "Ingrese un IP o nombre válido para el ESP32 Central (ej: 127.0.0.1 o 10.3.52.4)",
+    sucesso: idioma === "pt" ? "Cadastrado com sucesso!" : "¡Registrado exitosamente!",
+    erro: idioma === "pt" ? "Erro ao cadastrar." : "Error al registrar.",
+    enviarMecanica: idioma === "pt" ? "🔧 Enviar para Mecânica" : "🔧 Enviar a Mecánica",
+    voltarPatio: idioma === "pt" ? "🏍️ Voltar para Pátio" : "🏍️ Volver al Patio",
+    selecionePatio: idioma === "pt" ? "Selecione um pátio para retornar" : "Seleccione un patio para volver",
+    statusMecanica: idioma === "pt" ? "🔧 Mecânica" : "🔧 Mecánica",
+    statusPatio: idioma === "pt" ? "🏍️ Pátio" : "🏍️ Patio",
+    statusPendente: idioma === "pt" ? "📌 Pendente" : "📌 Pendiente",
   };
 
   const carregarMotos = async () => {
     setRefreshing(true);
     try {
-      // Faz as duas requisições simultâneas
       const [respMotos, respPatios] = await Promise.all([api.get("/motos"), api.get("/patios")]);
-
-      // Log para conferir os dados retornados
-      console.log("Resp Motos:", respMotos.data);
-      console.log("Resp Patios:", respPatios.data);
-
-      // Ajusta os patios
       const patiosData = Array.isArray(respPatios.data) ? respPatios.data : [];
       setPatios(patiosData);
-
-      // Ajusta as motos, mapeando localização corretamente
       const motosData = Array.isArray(respMotos.data)
         ? respMotos.data.map((m) => ({
           ...m,
-          // localizacao pega coordenadas do pátio, se existir
           localizacao: m.patio?.coordenadasExtremidade?.length > 0 ? m.patio.coordenadasExtremidade : null,
         }))
         : [];
-
       setMotos(motosData);
-
     } catch (err) {
       console.log("Erro na API:", err.response?.status, err.response?.data || err.message);
       Alert.alert("Erro", "Não foi possível carregar motos ou pátios.");
-      // Não zere os dados, para não perder informações já carregadas
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -107,19 +115,22 @@ export default function Motos() {
     carregarMotos();
   }, []);
 
+  // Cadastro da moto: não pede mais ESP32 central, pega do pátio selecionado!
   const registrar = async () => {
     if (!modelo || !categoria || !patioSelecionado) {
       Alert.alert("Campos obrigatórios", "Modelo, Categoria e Pátio são obrigatórios.");
       return;
     }
-
+    // Valide direto do pátio selecionado
     if (!patioSelecionado.esp32Central) {
-      Alert.alert("Pátio inválido", "O pátio selecionado precisa ter um esp32Central válido.");
+      Alert.alert("Pátio inválido", t.ipInvalido);
       return;
     }
-
+    if (!validarEsp32Central(patioSelecionado.esp32Central)) {
+      Alert.alert("Campo IP inválido", t.ipInvalido);
+      return;
+    }
     const codigoFinal = codigo || gerarCodigoAleatorio();
-
     try {
       const response = await api.post("/motos", {
         placa: placa || null,
@@ -128,24 +139,12 @@ export default function Motos() {
         categoria,
         codigo: codigoFinal,
         descricao: descricao || null,
-        patio: { id: patioSelecionado.id },
+        patio: { id: patioSelecionado.id }, // IP é puxado do pátio
         ativo: true,
       });
-
-
       setMotos((prev) => [...prev, { ...response.data, localizacao: null }]);
       Alert.alert("Sucesso", "Moto cadastrada com sucesso!");
-
-      // Reset campos
-      setPlaca("");
-      setChassi("");
-      setModelo("");
-      setCategoria("");
-      setCodigo("");
-      setDescricao("");
-      setPatioSelecionado(null);
-      setMostrarCadastro(false);
-
+      setPlaca(""); setChassi(""); setModelo(""); setCategoria(""); setCodigo(""); setDescricao(""); setPatioSelecionado(null); setMostrarCadastro(false);
     } catch (err) {
       console.log("Erro ao cadastrar moto:", err.response?.status, err.response?.data || err.message);
       if (err.response?.data?.message) {
@@ -157,16 +156,19 @@ export default function Motos() {
   };
 
   const atualizarLocalizacao = async (moto, x, y) => {
+    // Se a moto foi recém transferida para o pátio, use novoPatioSelecionado
+    const patioId = moto.patio?.id || novoPatioSelecionado?.id;
+    if (!patioId) {
+      Alert.alert("Erro", "Selecione um pátio antes de atualizar a localização.");
+      return;
+    }
     try {
-      const response = await api.put(`/motos/${moto.id}/location`, { x, y, patioId: moto.patio?.id, tag: "patio" });
+      await api.put(`/motos/${moto.id}/location`, { x, y, patioId, tag: "patio" });
       const locationResp = await api.get(`/motos/${moto.id}/location`);
-      setMotoSelecionada({ ...moto, localizacao: locationResp.data });
+      setMotoSelecionada({ ...moto, localizacao: locationResp.data, patio: { id: patioId } });
       setMostrarMapa(true);
       carregarMotos();
-      carregarMotos();
-      setMotoSelecionada(response.data);
     } catch (err) {
-      console.log("Erro ao atualizar localização:", err.response?.status, err.response?.data || err.message);
       Alert.alert("Erro", "Não foi possível atualizar a localização.");
     }
   };
@@ -175,6 +177,41 @@ export default function Motos() {
     setMotoSelecionada(moto);
     setModalMoto(true);
     setMostrarMapa(false);
+    setNovoPatioSelecionado(null);
+  };
+
+  const enviarParaMecanica = async () => {
+    try {
+      await api.put(`/motos/${motoSelecionada.id}/status`, { status: "mecanica" });
+      Alert.alert("Status alterado", "Moto enviada para a mecânica!");
+      setModalMoto(false);
+      carregarMotos();
+    } catch (err) {
+      Alert.alert("Erro", "Não foi possível mudar o status.");
+    }
+  };
+
+  const voltarParaPatio = async () => {
+    if (!novoPatioSelecionado) {
+      Alert.alert("Selecione um pátio para retornar");
+      return;
+    }
+    try {
+      await api.put(`/motos/${motoSelecionada.id}/status`, { status: "patio", patioId: novoPatioSelecionado.id });
+      setMotoSelecionada({ ...motoSelecionada, patio: novoPatioSelecionado, status: "patio" });
+      Alert.alert("Status alterado", "Moto voltou ao pátio!");
+      setModalMoto(false);
+      carregarMotos();
+    } catch (err) {
+      Alert.alert("Erro", "Não foi possível voltar ao pátio.");
+    }
+  };
+  
+  // status visual
+  const getStatusVisual = (moto) => {
+    if (moto?.status === "mecanica") return t.statusMecanica;
+    if (moto?.localizacao) return t.statusPatio;
+    return t.statusPendente;
   };
 
   if (loading) {
@@ -197,27 +234,23 @@ export default function Motos() {
       {mostrarCadastro && (
         <ScrollView style={[styles.cardCadastro, { backgroundColor: tema.card }]}>
           <Text style={[styles.titulo, { color: tema.btnPrimary }]}>📋 Cadastrar Nova Moto</Text>
-
           <TextInput style={[styles.input, { borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Placa" placeholderTextColor={tema.secundario} value={placa} onChangeText={setPlaca} />
           <TextInput style={[styles.input, { borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Chassi" placeholderTextColor={tema.secundario} value={chassi} onChangeText={setChassi} />
           <TextInput style={[styles.input, { borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Código (opcional)" placeholderTextColor={tema.secundario} value={codigo} onChangeText={setCodigo} />
-
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Modelo</Text>
           {modelosDisponiveis.map((m) => (
             <TouchableOpacity key={m.nome} style={[styles.btnOpcao, { borderColor: modelo === m.nome ? tema.btnPrimary : tema.secundario }]} onPress={() => setModelo(m.nome)}>
               <Text style={[styles.opcaoTitulo, { color: tema.texto }]}>{m.nome}</Text>
             </TouchableOpacity>
           ))}
-
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Categoria</Text>
           <View style={styles.categorias}>
-            {["aluguel", "aquisição"].map((tipo) => (
+            {categoriasDisponiveis.map((tipo) => (
               <TouchableOpacity key={tipo} style={[styles.categoriaBtn, { borderColor: categoria === tipo ? tema.btnPrimary : tema.secundario }]} onPress={() => setCategoria(tipo)}>
                 <Text style={[styles.categoriaText, { color: tema.texto }]}>{tipo.toUpperCase()}</Text>
               </TouchableOpacity>
             ))}
           </View>
-
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Pátio</Text>
           <View style={styles.categorias}>
             {patios.map((p) => (
@@ -226,10 +259,9 @@ export default function Motos() {
               </TouchableOpacity>
             ))}
           </View>
-
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Descrição</Text>
           <TextInput style={[styles.input, { minHeight: 60, borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Descrição (opcional)" placeholderTextColor={tema.secundario} value={descricao} onChangeText={setDescricao} multiline />
-
+          {/* REMOVIDO campo de cadastro do ESP32 Central */}
           <TouchableOpacity style={[styles.btnSalvar, { backgroundColor: tema.btnPrimary }]} onPress={registrar}>
             <Text style={styles.btnText}>📍 Registrar</Text>
           </TouchableOpacity>
@@ -256,17 +288,61 @@ export default function Motos() {
           <View style={[styles.modalContent, { backgroundColor: tema.card }]}>
             {!mostrarMapa ? (
               <>
-                <Text style={[styles.modalTitulo, { color: tema.texto }]}>{motoSelecionada?.placa || motoSelecionada?.codigo} - {motoSelecionada?.modelo}</Text>
-                <Text style={{ color: tema.texto }}>Status: {motoSelecionada?.localizacao ? "🏍️ Pátio" : "📌 Pendente"}</Text>
+                <Text style={[styles.modalTitulo, { color: tema.texto }]}>
+                  {motoSelecionada?.placa || motoSelecionada?.codigo} - {motoSelecionada?.modelo}
+                </Text>
+                <Text style={{ color: tema.texto }}>Status: {getStatusVisual(motoSelecionada)}</Text>
+                <Text style={{ color: tema.texto }}>Categoria: {motoSelecionada?.categoria}</Text>
+                <Text style={{ color: tema.texto }}>Chassi: {motoSelecionada?.chassi}</Text>
+                <Text style={{ color: tema.texto }}>Descrição: {motoSelecionada?.descricao}</Text>
+                <Text style={{ color: tema.texto }}>Pátio: {motoSelecionada?.patio?.nome || "Sem Pátio"}</Text>
+                <Text style={{ color: tema.texto }}>Código: {motoSelecionada?.codigo}</Text>
 
-                <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => atualizarLocalizacao(motoSelecionada, Math.random(), Math.random())}>
-                  <Text style={styles.btnText}>📌 Atualizar Localização</Text>
-                </TouchableOpacity>
-
-                {motoSelecionada?.localizacao && (
-                  <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => setMostrarMapa(true)}>
-                    <Text style={styles.btnText}>{t.localizar}</Text>
+                {/* Se está no pátio ou pendente, pode enviar para mecânica */}
+                {motoSelecionada?.status !== "mecanica" && (
+                  <TouchableOpacity
+                    style={[styles.btnPrimary, { backgroundColor: tema.btnDanger }]}
+                    onPress={enviarParaMecanica}
+                  >
+                    <Text style={styles.btnText}>{t.enviarMecanica}</Text>
                   </TouchableOpacity>
+                )}
+
+                {/* Se está na mecânica, pode voltar ao pátio */}
+                {motoSelecionada?.status === "mecanica" && (
+                  <>
+                    <Text style={{ color: tema.texto, marginTop: 10 }}>{t.selecionePatio}:</Text>
+                    <View style={styles.categorias}>
+                      {patios.map((p) => (
+                        <TouchableOpacity key={p.id}
+                          style={[styles.categoriaBtn, { borderColor: novoPatioSelecionado?.id === p.id ? tema.btnPrimary : tema.secundario }]}
+                          onPress={() => setNovoPatioSelecionado(p)}
+                        >
+                          <Text style={[styles.categoriaText, { color: tema.texto }]}>{p.nome}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary, marginTop: 10 }]}
+                      onPress={voltarParaPatio}
+                    >
+                      <Text style={styles.btnText}>{t.voltarPatio}</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* Só mostra botões de localização se NÃO estiver na mecânica */}
+                {motoSelecionada?.status !== "mecanica" && (
+                  <>
+                    <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => atualizarLocalizacao(motoSelecionada, Math.random(), Math.random())}>
+                      <Text style={styles.btnText}>📌 Atualizar Localização</Text>
+                    </TouchableOpacity>
+                    {motoSelecionada?.localizacao && (
+                      <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: tema.btnPrimary }]} onPress={() => setMostrarMapa(true)}>
+                        <Text style={styles.btnText}>{t.localizar}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
 
                 <TouchableOpacity style={[styles.btnSecondary, { marginTop: 10, backgroundColor: tema.btnPrimary }]} onPress={() => setModalMoto(false)}>
