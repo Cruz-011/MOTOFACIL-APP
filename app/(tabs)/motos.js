@@ -261,7 +261,6 @@ export default function Motos() {
           </View>
           <Text style={[styles.label, { color: tema.btnPrimary }]}>Descrição</Text>
           <TextInput style={[styles.input, { minHeight: 60, borderColor: tema.btnPrimary, color: tema.texto }]} placeholder="Descrição (opcional)" placeholderTextColor={tema.secundario} value={descricao} onChangeText={setDescricao} multiline />
-          {/* REMOVIDO campo de cadastro do ESP32 Central */}
           <TouchableOpacity style={[styles.btnSalvar, { backgroundColor: tema.btnPrimary }]} onPress={registrar}>
             <Text style={styles.btnText}>📍 Registrar</Text>
           </TouchableOpacity>

@@ -122,7 +122,6 @@ export default function PatioManager() {
   const renderLista = () => (
 
     <View>
-      <ScrollView>
         <Text style={[styles.title, { color: tema.primary }]}>{t.selecionarPatio}</Text>
         <TouchableOpacity style={[styles.botao, { backgroundColor: tema.primary }]} onPress={() => setAba("conectar")}>
           <Ionicons name="add-circle-outline" size={20} color="#fff" />
@@ -175,7 +174,6 @@ export default function PatioManager() {
             </ScrollView>
           </View>
         )}
-        </ScrollView>
     </View>
     
   );

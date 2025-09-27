@@ -6,7 +6,7 @@ import api from '../src/config/api.js';
 import colors from '../src/theme/colors.js';
 
 const { width } = Dimensions.get('window');
-const MAP_WIDTH = Math.min(width * 0.8, 250); // nunca maior que 350px
+const MAP_WIDTH = Math.min(width * 0.8, 250); // nunca maior que 250px
 const MAP_HEIGHT = MAP_WIDTH;
 const ICON_SIZE = 25;
 
@@ -29,7 +29,6 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
   const fetchPatioCoords = async (patioId) => {
     try {
       setCarregando(true);
-      // Busca o pátio pelo id para pegar suas coordenadas
       const resp = await api.get(`/patios/${patioId}`);
       setPatioCoords(resp.data.coordenadasExtremidade || []);
     } catch (err) {
@@ -45,7 +44,8 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
     try {
       setCarregando(true);
       const response = await api.get(`/motos/${id}/location`);
-      setMotoAtual({ ...motoSelecionada, location: response.data });
+      // Corrigido: localizacao para compatibilidade absoluta com backend/front
+      setMotoAtual({ ...motoSelecionada, localizacao: response.data });
     } catch (err) {
       console.log(err);
       Alert.alert('Erro', 'Não foi possível carregar a localização da moto.');
@@ -54,10 +54,12 @@ export default function MapaPatio({ patioSelecionado, motoSelecionada }) {
     }
   };
 
+  // Use localizacao.x e localizacao.y fiel ao backend/front
   const getCoords = (coord, size) => (coord * size - ICON_SIZE / 2);
 
-  const leftMoto = getCoords(motoAtual?.location?.x ?? 0, MAP_WIDTH);
-  const topMoto = getCoords(motoAtual?.location?.y ?? 0, MAP_HEIGHT);
+  // Corrigido: usa motoAtual.localizacao
+  const leftMoto = getCoords(motoAtual?.localizacao?.x ?? 0, MAP_WIDTH);
+  const topMoto = getCoords(motoAtual?.localizacao?.y ?? 0, MAP_HEIGHT);
   const leftUser = getCoords(posicaoUsuario.x, MAP_WIDTH);
   const topUser = getCoords(posicaoUsuario.y, MAP_HEIGHT);
 
@@ -154,12 +156,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderColor: colors.primary,
     borderWidth: 1.5,
-
     position: 'relative',
     maxWidth: 350,
     maxHeight: 350,
     width: '100%',
-    height: 350, // ou MAP_HEIGHT
+    height: 250,
   },
   ponto: {
     position: 'absolute',
@@ -199,7 +200,6 @@ const styles = StyleSheet.create({
   modalTitulo: { fontSize: 22, color: colors.primary, fontWeight: 'bold' },
   modalFecharBtn: { marginTop: 20, backgroundColor: '#444', padding: 12, borderRadius: 10 },
   modalFecharText: { color: '#fff', fontWeight: 'bold' },
-  // Pontos do pátio (cantos)
   pontoPatio: {
     position: 'absolute',
     width: ICON_SIZE + 8,
