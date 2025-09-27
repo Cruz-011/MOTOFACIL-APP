@@ -128,7 +128,7 @@ export default function Motos() {
         categoria,
         codigo: codigoFinal,
         descricao: descricao || null,
-        patio: { id: patioSelecionado.id }, 
+        patio: { id: patioSelecionado.id },
         ativo: true,
       });
 
@@ -158,7 +158,11 @@ export default function Motos() {
 
   const atualizarLocalizacao = async (moto, x, y) => {
     try {
-      const response = await api.put(`/motos/${moto.id}/location`, { x, y });
+      const response = await api.put(`/motos/${moto.id}/location`, { x, y, patioId: moto.patio?.id, tag: "patio" });
+      const locationResp = await api.get(`/motos/${moto.id}/location`);
+      setMotoSelecionada({ ...moto, localizacao: locationResp.data });
+      setMostrarMapa(true);
+      carregarMotos();
       carregarMotos();
       setMotoSelecionada(response.data);
     } catch (err) {
