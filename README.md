@@ -38,8 +38,8 @@ Configurando o Backend (Oracle)
 No arquivo src/main/resources/application.properties, configure:
 
 spring.datasource.url=jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL
-spring.datasource.username=rm...
-spring.datasource.password=....
+spring.datasource.username=rm558238
+spring.datasource.password=111105
 spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 
 spring.jpa.hibernate.ddl-auto=update
@@ -51,6 +51,50 @@ springdoc.swagger-ui.path=/swagger-ui.html
 
 
 🔹 Para desenvolvimento local, você pode usar H2 se não tiver Oracle.
+
+# ESP Simulator Server
+
+Este projeto é um simulador de servidor ESP que simula dados RSSI (Received Signal Strength Indicator) para localização de motos em um pátio usando Flask.
+
+## Funcionalidades
+
+- Simula 5 ESPs posicionados em um pátio (4 nos cantos e 1 no centro)
+- Gera dados RSSI baseados na distância simulada
+- API REST para simulação e obtenção de coordenadas dos ESPs
+
+## Pré-requisitos
+
+- Python 3.6 ou superior
+- pip (gerenciador de pacotes do Python)
+
+## Instalação das Dependências
+
+1. **Clone ou baixe o projeto** [(se ainda não tiver feito)](https://github.com/Cruz-011/simuladorESPS.git)
+
+
+3. **Instale as dependências necessárias:**
+   ```bash
+   pip install flask
+
+
+## Como Iniciar o Projeto
+
+1. **Execute o servidor:**
+   ```bash
+   python esp_simulator_server.py
+   ```
+
+2. **O servidor será iniciado em:**
+   - Host: `0.0.0.0` (todas as interfaces de rede)
+   - Porta: `5001`
+   - URL local: `http://localhost:5001`
+
+3. **Você verá uma mensagem similar a:**
+   ```
+   * Running on all addresses (0.0.0.0)
+   * Running on http://127.0.0.1:5001
+   * Running on http://[seu-ip]:5001
+   ```
 
 ## 4️⃣ Clonando o Frontend
 
@@ -151,7 +195,7 @@ motofacil-frontend/
 
 ## 🔟 Observações Importantes
 
-- Sempre inicie o backend antes do frontend.
+- Sempre inicie o backend e o simulador de esp antes do frontend.
 - Alterações em `API_URL` exigem reinício do frontend.
 - Problemas de CORS devem ser resolvidos no backend (permitindo `http://localhost:3000`).
 
