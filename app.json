@@ -7,18 +7,12 @@
     "scheme": "motofacilapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.cauandacruz.MotoFacilApp"
     },
     "web": {
       "bundler": "metro",
@@ -30,6 +24,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "710179bb-9437-497c-8809-5e337d646719"
+      }
     }
   }
 }

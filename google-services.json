@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "480352540127",
+    "project_id": "motofacil-1a93c",
+    "storage_bucket": "motofacil-1a93c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480352540127:android:6308de805b8f74f698206a",
+        "android_client_info": {
+          "package_name": "com.cauandacruz.MotoFacilApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9raPLxEZbTgb9Qzowj9yo0feWVZ540_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
